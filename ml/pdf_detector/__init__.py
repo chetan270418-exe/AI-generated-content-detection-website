@@ -1,0 +1,1 @@
+# PDF detector module
