@@ -67,7 +67,7 @@ export default function ConfidenceGauge({ score, verdict }: Props) {
         <span className={`text-4xl font-bold font-mono ${colorClass}`}>
           {percentage}%
         </span>
-        <span className="text-sm text-[var(--text-muted)] uppercase tracking-wider mt-1">Confidence</span>
+        <span className="text-sm text-[var(--text-muted)] uppercase tracking-wider mt-1">AI Probability</span>
       </div>
     </div>
   )

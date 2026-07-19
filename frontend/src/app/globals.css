@@ -1,14 +1,11 @@
 @import "tailwindcss";
 
-@theme {
+:root {
   --color-bg-primary: #0a0a0f;
   --color-bg-surface: #1a1a2e;
   --color-accent-real: #00d4ff;
   --color-accent-ai: #ff006e;
   --color-accent-neutral: #ffbe0b;
-}
-
-:root {
   --bg-color: #f8f9fa;
   --surface-color: #ffffff;
   --text-color: #000000;

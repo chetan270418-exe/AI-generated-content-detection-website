@@ -3,6 +3,7 @@ from ..schemas.user import UserSignup, UserLogin, TokenResponse, UserResponse
 from ..models.user import User
 from ..utils.security import hash_password, verify_password
 from ..utils.jwt import create_access_token
+from ..utils.pubsub import publish_admin_event
 from datetime import datetime
 
 router = APIRouter()
@@ -23,6 +24,12 @@ async def signup(user_data: UserSignup):
         trial_start=datetime.utcnow()
     )
     await user.insert()
+    
+    await publish_admin_event("user_signup", {
+        "email": user.email,
+        "plan": user.plan,
+        "role": getattr(user, "role", "user")
+    })
     
     # Generate token
     token = create_access_token(data={"sub": str(user.id), "email": user.email})

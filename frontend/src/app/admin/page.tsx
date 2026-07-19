@@ -30,6 +30,60 @@ export default function AdminDashboard() {
     }
   }, [isAuthenticated, authLoading, user, router])
 
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'admin') return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const wsUrl = apiUrl.replace(/^http/, 'ws') + '/api/admin/ws';
+    
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.event === 'analysis_completed') {
+          // Update stats dynamically
+          setStats((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              total_analyses: prev.total_analyses + 1,
+              ai_count: payload.data.verdict === 'ai_generated' ? prev.ai_count + 1 : prev.ai_count,
+              human_count: payload.data.verdict === 'human_made' ? prev.human_count + 1 : prev.human_count
+            };
+          });
+          
+          // Prepend to analyses list
+          setAnalyses((prev) => {
+            const newAnalysis = {
+              id: payload.data.id,
+              filename: "Real-time update",
+              file_type: payload.data.file_type,
+              verdict: payload.data.verdict,
+              status: payload.data.status,
+              created_at: new Date().toISOString()
+            };
+            return [newAnalysis, ...prev].slice(0, 50);
+          });
+        } else if (payload.event === 'user_signup') {
+          setStats((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              total_users: prev.total_users + 1
+            };
+          });
+        }
+      } catch (err) {
+        console.error("WebSocket message parse error", err);
+      }
+    };
+    
+    return () => {
+      ws.close();
+    };
+  }, [isAuthenticated, user]);
+
   const fetchAdminData = async () => {
     try {
       const [statsRes, analysesRes, usersRes] = await Promise.all([

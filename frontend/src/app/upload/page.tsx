@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { analysisApi } from '@/lib/api'
 import FileUploader from '@/components/ui/FileUploader'
-import { Image as ImageIcon, Type, Loader2, Sparkles, Activity, FileText, Video, Layers } from 'lucide-react'
+import { Image as ImageIcon, Type, Loader2, Sparkles, Activity, FileText, Video, Layers, Mic } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDropzone } from 'react-dropzone'
 
@@ -13,7 +13,7 @@ export default function UploadPage() {
   const { isAuthenticated, user, loading: authLoading } = useAuth() as any
   const router = useRouter()
   
-  const [activeTab, setActiveTab] = useState<'image' | 'text' | 'pdf' | 'video'>('image')
+  const [activeTab, setActiveTab] = useState<'image' | 'text' | 'pdf' | 'video' | 'audio' | 'batch'>('image')
   const [file, setFile] = useState<File | null>(null)
   const [text, setText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -77,6 +77,19 @@ export default function UploadPage() {
       router.push(`/result/${res.analysis_id}`)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to submit video for analysis')
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSubmitAudio = async () => {
+    if (!file) return
+    setError('')
+    setIsSubmitting(true)
+    try {
+      const res = await analysisApi.analyzeAudio(file)
+      router.push(`/result/${res.analysis_id}`)
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to submit audio for analysis')
       setIsSubmitting(false)
     }
   }
@@ -163,12 +176,12 @@ export default function UploadPage() {
         className="glass rounded-[24px] overflow-hidden shadow-2xl shadow-black/50 border border-white/10"
       >
         {/* Animated Tabs */}
-        <div className="flex relative bg-black/40 p-2">
+        <div className="flex flex-wrap relative bg-black/40 p-2 gap-1">
           <button
             onClick={() => setActiveTab('image')}
-            className={`flex-1 py-4 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 ${activeTab === 'image' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
+            className={`flex-1 min-w-[100px] py-3 px-3 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 text-sm ${activeTab === 'image' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
           >
-            <ImageIcon size={18} /> Image Verification
+            <ImageIcon size={16} /> Image
             {activeTab === 'image' && (
               <motion.div 
                 layoutId="activeTab"
@@ -180,9 +193,9 @@ export default function UploadPage() {
           
           <button
             onClick={() => setActiveTab('text')}
-            className={`flex-1 py-4 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 ${activeTab === 'text' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
+            className={`flex-1 min-w-[100px] py-3 px-3 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 text-sm ${activeTab === 'text' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
           >
-            <Type size={18} /> Text Verification
+            <Type size={16} /> Text
             {activeTab === 'text' && (
               <motion.div 
                 layoutId="activeTab"
@@ -194,9 +207,9 @@ export default function UploadPage() {
           
           <button
             onClick={() => setActiveTab('pdf')}
-            className={`flex-1 py-4 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 ${activeTab === 'pdf' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
+            className={`flex-1 min-w-[80px] py-3 px-3 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 text-sm ${activeTab === 'pdf' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
           >
-            <FileText size={18} /> PDF
+            <FileText size={16} /> PDF
             {activeTab === 'pdf' && (
               <motion.div 
                 layoutId="activeTab"
@@ -208,10 +221,24 @@ export default function UploadPage() {
 
           <button
             onClick={() => setActiveTab('video')}
-            className={`flex-1 py-4 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 ${activeTab === 'video' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
+            className={`flex-1 min-w-[90px] py-3 px-3 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 text-sm ${activeTab === 'video' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
           >
-            <Video size={18} /> Video
+            <Video size={16} /> Video
             {activeTab === 'video' && (
+              <motion.div 
+                layoutId="activeTab"
+                className="absolute inset-0 bg-white/10 rounded-[16px] -z-10 border border-white/20"
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              />
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('audio')}
+            className={`flex-1 min-w-[90px] py-3 px-3 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 text-sm ${activeTab === 'audio' ? 'text-white font-medium' : 'text-[var(--text-muted)] hover:text-white'}`}
+          >
+            <Mic size={16} /> Audio
+            {activeTab === 'audio' && (
               <motion.div 
                 layoutId="activeTab"
                 className="absolute inset-0 bg-white/10 rounded-[16px] -z-10 border border-white/20"
@@ -222,11 +249,11 @@ export default function UploadPage() {
 
           {user?.plan === 'vip' && (
             <button
-              onClick={() => setActiveTab('batch' as any)}
-              className={`flex-1 py-4 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 ${activeTab === 'batch' as any ? 'text-[var(--color-accent-real)] font-bold' : 'text-[var(--color-accent-real)]/70 hover:text-[var(--color-accent-real)]'}`}
+              onClick={() => setActiveTab('batch')}
+              className={`flex-1 min-w-[100px] py-3 px-3 rounded-[16px] flex items-center justify-center gap-2 transition-colors relative z-10 text-sm ${activeTab === 'batch' ? 'text-[var(--color-accent-real)] font-bold' : 'text-[var(--color-accent-real)]/70 hover:text-[var(--color-accent-real)]'}`}
             >
-              <Layers size={18} /> Batch (VIP)
-              {activeTab === 'batch' as any && (
+              <Layers size={16} /> Batch
+              {activeTab === 'batch' && (
                 <motion.div 
                   layoutId="activeTab"
                   className="absolute inset-0 bg-white/10 rounded-[16px] -z-10 border border-white/20"
@@ -268,10 +295,10 @@ export default function UploadPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                className="space-y-8"
+                className="space-y-6"
               >
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[var(--color-accent-real)] to-[var(--color-accent-ai)] rounded-[16px] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+                  <div className="absolute -inset-[2px] bg-gradient-to-r from-[var(--color-accent-real)] to-[var(--color-accent-ai)] rounded-[18px] blur-sm opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
                   <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
@@ -343,6 +370,32 @@ export default function UploadPage() {
                   className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
                 >
                   {isSubmitting ? <Loader2 className="animate-spin text-black" /> : 'Run Video Analysis'}
+                </motion.button>
+              </motion.div>
+            ) : activeTab === 'audio' ? (
+              <motion.div 
+                key="audio"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-8"
+              >
+                <FileUploader 
+                  onFileSelect={setFile} 
+                  accept={{ 'audio/*': ['.mp3', '.wav', '.m4a'] }} 
+                  supportText="Supports MP3, WAV, M4A" 
+                  maxSizeMB={20}
+                />
+                
+                <motion.button
+                  whileHover={{ scale: file && !isSubmitting ? 1.02 : 1 }}
+                  whileTap={{ scale: file && !isSubmitting ? 0.98 : 1 }}
+                  onClick={handleSubmitAudio}
+                  disabled={!file || isSubmitting}
+                  className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
+                >
+                  {isSubmitting ? <Loader2 className="animate-spin text-black" /> : 'Run Audio Analysis'}
                 </motion.button>
               </motion.div>
             ) : activeTab === 'batch' ? (

@@ -5,72 +5,88 @@ from transformers import AutoImageProcessor
 from optimum.onnxruntime import ORTModelForImageClassification
 import onnxruntime
 
-class ImageDetectorModel:
-    _instance = None
+import gc
 
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(ImageDetectorModel, cls).__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
+# LRU Cache (maxsize=1) to prevent RAM explosion.
+# Unloads previous model when a new one is requested.
+_current_loaded_model_name = None
+_current_loaded_model = None
 
-    def __init__(self, model_id: str = None):
-        if self._initialized:
-            return
-            
-        self.model_id = model_id or os.getenv("HF_MODEL_IMAGE", "umm-maybe/AI-image-detector")
-        self.processor = None
-        self.model = None
-        self._initialized = True
-        
-    def load(self):
-        """Load the ONNX model and processor from local disk."""
-        if self.model is not None and self.processor is not None:
-            return
-            
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        model_path = os.path.join(base_dir, "ml", "models", "image_onnx")
-        
-        print(f"Loading ImageDetectorModel from {model_path}...")
-        self.processor = AutoImageProcessor.from_pretrained(model_path, use_fast=True)
-        
-        # Use only providers that are actually available on this machine
-        available = onnxruntime.get_available_providers()
-        provider = "CPUExecutionProvider"
-        for p in available:
-            if p != "AzureExecutionProvider":
-                provider = p
-                break
-        
-        self.model = ORTModelForImageClassification.from_pretrained(
-            model_path,
-            provider=provider
-        )
-        print(f"Image model loaded successfully (provider: {provider}).")
 
-    def predict(self, image_path: str) -> dict:
-        """Predict whether an image is AI generated or real."""
-        if self.model is None or self.processor is None:
-            self.load()
-            
-        image = Image.open(image_path).convert("RGB")
-        inputs = self.processor(images=image, return_tensors="np")
+def _get_provider() -> str:
+    available = onnxruntime.get_available_providers()
+    for p in available:
+        if p != "AzureExecutionProvider":
+            return p
+    return "CPUExecutionProvider"
+
+
+def load_classifier(folder_name: str):
+    """Load (and cache) an ONNX image classifier from ml/models/<folder_name>/."""
+    global _current_loaded_model_name, _current_loaded_model
+    
+    if folder_name == _current_loaded_model_name:
+        return _current_loaded_model
         
-        outputs = self.model(**inputs)
-        logits = outputs.logits
-        
-        # Apply softmax to get probabilities (numpy)
-        exp_logits = np.exp(logits - np.max(logits, axis=-1, keepdims=True))
-        probs = (exp_logits / exp_logits.sum(axis=-1, keepdims=True))[0].tolist()
-        
-        predicted_class_id = int(np.argmax(logits, axis=-1)[0])
-        label = self.model.config.id2label[predicted_class_id]
-        
-        confidence = probs[predicted_class_id]
-        
-        return {
-            "label": label,
-            "confidence": confidence,
-            "raw_scores": probs,
-            "id2label": self.model.config.id2label
-        }
+    # Clear old model to free RAM
+    if _current_loaded_model is not None:
+        print(f"Unloading previous image classifier '{_current_loaded_model_name}' to free RAM...")
+        del _current_loaded_model
+        gc.collect()
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    model_path = os.path.join(base_dir, "ml", "models", folder_name)
+
+    print(f"Loading image classifier '{folder_name}' from {model_path}...")
+    processor = AutoImageProcessor.from_pretrained(model_path, use_fast=True)
+
+    provider = _get_provider()
+    
+    # Memory optimization: limit threads to prevent massive RAM/CPU overhead 
+    # when running inside Celery workers.
+    session_options = onnxruntime.SessionOptions()
+    session_options.intra_op_num_threads = 1
+    session_options.inter_op_num_threads = 1
+    
+    model = ORTModelForImageClassification.from_pretrained(
+        model_path, 
+        provider=provider,
+        session_options=session_options,
+        file_name="model_quantized.onnx"
+    )
+    print(f"Image classifier '{folder_name}' (INT8) loaded successfully (provider: {provider}).")
+
+    _current_loaded_model_name = folder_name
+    _current_loaded_model = (processor, model)
+    return _current_loaded_model
+
+
+def predict_with_classifier(folder_name: str, image_path: str) -> dict:
+    """Run a single named classifier against an image, return its raw label/confidence."""
+    processor, model = load_classifier(folder_name)
+
+    image = Image.open(image_path).convert("RGB")
+    inputs = processor(images=image, return_tensors="np")
+
+    outputs = model(**inputs)
+    logits = outputs.logits
+
+    exp_logits = np.exp(logits - np.max(logits, axis=-1, keepdims=True))
+    probs = (exp_logits / exp_logits.sum(axis=-1, keepdims=True))[0].tolist()
+
+    predicted_class_id = int(np.argmax(logits, axis=-1)[0])
+    label = model.config.id2label[predicted_class_id]
+    confidence = probs[predicted_class_id]
+
+    return {
+        "label": label,
+        "confidence": confidence,
+        "raw_scores": probs,
+        "id2label": model.config.id2label,
+    }
+
+
+def preload_all():
+    """Warm both classifiers at backend startup so the first request isn't slow."""
+    load_classifier("image_onnx_gan")
+    load_classifier("image_onnx_diffusion")

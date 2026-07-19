@@ -56,20 +56,16 @@ export default function ParticleField() {
 
   return (
     <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={particleCount}
-          array={positions}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          count={particleCount}
-          array={colors}
-          itemSize={3}
-        />
-      </bufferGeometry>
+     <bufferGeometry>
+  <primitive
+    attach="attributes-position"
+    object={new THREE.BufferAttribute(positions, 3)}
+  />
+  <primitive
+    attach="attributes-color"
+    object={new THREE.BufferAttribute(colors, 3)}
+  />
+</bufferGeometry>
       <pointsMaterial
         size={0.03}
         vertexColors={true}

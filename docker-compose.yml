@@ -1,22 +1,50 @@
 version: '3.8'
 
 services:
-  # Redis - Task queue broker for Celery
   redis:
-    image: redis:7-alpine
-    container_name: dictator-redis
+    image: redis:alpine
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    # Limit Redis RAM just in case (e.g., 256MB)
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
 
-volumes:
-  redis_data:
-    driver: local
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MONGODB_URI=${MONGODB_URI}
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - redis
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MONGODB_URI=${MONGODB_URI}
+    depends_on:
+      - redis
+      - backend
+    restart: unless-stopped
+    # Use -P threads and --concurrency=2 to aggressively save RAM
+    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-P", "threads", "--concurrency=2"]
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped

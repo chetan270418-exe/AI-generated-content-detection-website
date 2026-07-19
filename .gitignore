@@ -1,30 +1,32 @@
-
+# ─── Environment ───────────────────────────────────────────
 .env
 .env.*
 !.env.example
 
-
+# ─── Python Virtual Environments ──────────────────────────
 .venv/
 venv/
 ENV/
 
+# ─── Python Bytecode ──────────────────────────────────────
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 
+# ─── Testing / Coverage ──────────────────────────────────
 .pytest_cache/
 .mypy_cache/
 .coverage
 htmlcov/
 
+# ─── Python Packaging ────────────────────────────────────
 *.egg-info/
 .eggs/
-
 dist/
 build/
 
-
+# ─── ML Models & Data (downloaded at runtime) ────────────
 ml/models/
 ml/data/
 *.pt
@@ -35,26 +37,29 @@ ml/data/
 *.joblib
 *.pickle
 
+# ─── Uploads (user-uploaded files) ───────────────────────
 uploads/
 
-
+# ─── Node / Next.js ─────────────────────────────────────
 node_modules/
 .next/
 out/
 
-
+# ─── IDE ─────────────────────────────────────────────────
 .vscode/
 .idea/
 
-
+# ─── Logs ────────────────────────────────────────────────
 *.log
 logs/
 
-
+# ─── OS Files ────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-
+# ─── Temp / Scratch ──────────────────────────────────────
 *.tmp
 *.bak
 *.swp
+debug_*.py
+fetch_*.py

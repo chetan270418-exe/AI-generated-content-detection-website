@@ -6,11 +6,13 @@ from ..models.analysis import Analysis
 from ..schemas.analysis import TextAnalysisRequest
 from ..utils.jwt import get_current_user
 from ..services.file_service import save_upload
+from ..utils.pubsub import publish_admin_event
 
 from ml.image_detector.predict import predict_image
 from ml.text_detector.predict import predict_text
 from ml.pdf_detector.predict import predict_pdf
 from ml.video_detector.predict import predict_video
+from ml.audio_detector.predict import predict_audio
 
 router = APIRouter()
 
@@ -58,6 +60,13 @@ async def analyze_image(
         analysis.detailed_results = result.get("detailed_results")
         analysis.completed_at = datetime.utcnow()
         await analysis.save()
+        
+        await publish_admin_event("analysis_completed", {
+            "id": str(analysis.id),
+            "file_type": analysis.file_type,
+            "verdict": analysis.verdict,
+            "status": "completed"
+        })
     except Exception as e:
         analysis.status = "failed"
         analysis.explanation = f"Analysis failed: {str(e)}"
@@ -96,6 +105,13 @@ async def analyze_text(
         analysis.detailed_results = result.get("detailed_results")
         analysis.completed_at = datetime.utcnow()
         await analysis.save()
+        
+        await publish_admin_event("analysis_completed", {
+            "id": str(analysis.id),
+            "file_type": analysis.file_type,
+            "verdict": analysis.verdict,
+            "status": "completed"
+        })
     except Exception as e:
         analysis.status = "failed"
         analysis.explanation = f"Analysis failed: {str(e)}"
@@ -139,6 +155,13 @@ async def analyze_pdf_file(
         analysis.detailed_results = result.get("detailed_results")
         analysis.completed_at = datetime.utcnow()
         await analysis.save()
+        
+        await publish_admin_event("analysis_completed", {
+            "id": str(analysis.id),
+            "file_type": analysis.file_type,
+            "verdict": analysis.verdict,
+            "status": "completed"
+        })
     except Exception as e:
         analysis.status = "failed"
         analysis.explanation = f"Analysis failed: {str(e)}"
@@ -182,6 +205,63 @@ async def analyze_video_file(
         analysis.detailed_results = result.get("detailed_results")
         analysis.completed_at = datetime.utcnow()
         await analysis.save()
+        
+        await publish_admin_event("analysis_completed", {
+            "id": str(analysis.id),
+            "file_type": analysis.file_type,
+            "verdict": analysis.verdict,
+            "status": "completed"
+        })
+    except Exception as e:
+        analysis.status = "failed"
+        analysis.explanation = f"Analysis failed: {str(e)}"
+        analysis.completed_at = datetime.utcnow()
+        await analysis.save()
+    
+    return {"analysis_id": str(analysis.id), "status": analysis.status}
+
+@router.post("/audio")
+async def analyze_audio_file(
+    file: UploadFile = File(...), 
+    current_user: User = Depends(get_current_user)
+):
+    await check_quota(current_user)
+    
+    if not file.content_type.startswith("audio/") and not file.filename.endswith((".mp3", ".wav")):
+        raise HTTPException(status_code=400, detail="File must be an audio format")
+        
+    file_path = await save_upload(file, str(current_user.id))
+    
+    analysis = Analysis(
+        user_id=str(current_user.id),
+        file_type="audio",
+        original_filename=file.filename,
+        file_path=file_path,
+        status="processing"
+    )
+    await analysis.insert()
+    
+    current_user.analyses_count += 1
+    await current_user.save()
+    
+    try:
+        import asyncio
+        result = await asyncio.to_thread(predict_audio, file_path)
+        
+        analysis.status = "completed"
+        analysis.verdict = result.get("verdict")
+        analysis.confidence_score = result.get("confidence")
+        analysis.explanation = result.get("explanation")
+        analysis.detailed_results = result.get("detailed_results")
+        analysis.completed_at = datetime.utcnow()
+        await analysis.save()
+        
+        await publish_admin_event("analysis_completed", {
+            "id": str(analysis.id),
+            "file_type": analysis.file_type,
+            "verdict": analysis.verdict,
+            "status": "completed"
+        })
     except Exception as e:
         analysis.status = "failed"
         analysis.explanation = f"Analysis failed: {str(e)}"
@@ -216,6 +296,8 @@ async def analyze_batch(
             file_type = "pdf"
         elif file.content_type.startswith("video/"):
             file_type = "video"
+        elif file.content_type.startswith("audio/") or file.filename.endswith((".mp3", ".wav")):
+            file_type = "audio"
             
         if file_type == "unknown":
             return None
@@ -241,6 +323,9 @@ async def analyze_batch(
                 elif file_type == "video":
                     from ml.video_detector.predict import predict_video
                     return predict_video(file_path)
+                elif file_type == "audio":
+                    from ml.audio_detector.predict import predict_audio
+                    return predict_audio(file_path)
             except Exception as e:
                 return {"error": str(e)}
 
@@ -258,6 +343,13 @@ async def analyze_batch(
             
             analysis.completed_at = datetime.utcnow()
             await analysis.save()
+            
+            await publish_admin_event("analysis_completed", {
+                "id": str(analysis.id),
+                "file_type": analysis.file_type,
+                "verdict": analysis.verdict,
+                "status": analysis.status
+            })
             
         # Fire and forget
         asyncio.create_task(complete_analysis())

@@ -10,21 +10,34 @@ import ConfidenceGauge from '@/components/ui/ConfidenceGauge'
 import ScoreChart from '@/components/charts/ScoreChart'
 import { ArrowLeft, Loader2, RefreshCw, Download } from 'lucide-react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, Variants } from 'framer-motion'
 
-const container = {
-  hidden: { opacity: 0 },
+const container: Variants = {
+  hidden: {
+    opacity: 0,
+  },
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1
-    }
-  }
+      staggerChildren: 0.1,
+    },
+  },
 }
 
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+const item: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+  },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24,
+    },
+  },
 }
 
 export default function ResultPage() {
@@ -221,9 +234,25 @@ export default function ResultPage() {
               Explanation
             </h3>
             <div className="bg-black/40 p-6 rounded-[16px] flex-grow border border-white/5 shadow-inner">
-              <p className="text-gray-300 leading-relaxed text-lg">
+              <p className="text-gray-300 leading-relaxed text-lg mb-6">
                 {result.explanation}
               </p>
+              
+              {result.detailed_results?.heatmap && (
+                <div className="mt-4 border-t border-white/10 pt-6">
+                  <h4 className="text-sm font-bold text-[var(--color-accent-ai)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-accent-ai)] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-[var(--color-accent-ai)]"></span>
+                    </span>
+                    AI Anomaly Heatmap
+                  </h4>
+                  <p className="text-xs text-[var(--text-muted)] mb-3">Red areas indicate regions that strongly triggered the AI detection model.</p>
+                  <div className="rounded-[16px] overflow-hidden border border-white/10 bg-black/50 shadow-lg">
+                    <img src={result.detailed_results.heatmap} alt="AI Anomaly Heatmap" className="w-full h-auto object-contain max-h-[300px]" />
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

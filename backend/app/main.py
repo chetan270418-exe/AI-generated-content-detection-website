@@ -30,16 +30,10 @@ app.add_middleware(
 async def startup_event():
     await init_db()
     
-    # Pre-load ML models so the first user doesn't experience a cold start
-    import asyncio
-    from ml.image_detector.model import ImageDetectorModel
-    from ml.text_detector.model import TextDetectorModel
-    
-    try:
-        await asyncio.to_thread(ImageDetectorModel().load)
-        await asyncio.to_thread(TextDetectorModel().load)
-    except Exception as e:
-        print(f"Warning: Failed to pre-load models (maybe not exported yet?): {e}")
+    # NOTE: We deliberately do NOT preload ML models here. 
+    # FastAPI does not run inference; the Celery workers do.
+    # Preloading here would duplicate the ~3GB model memory footprint.
+
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(analyze.router, prefix="/api/analyze", tags=["analyze"])

@@ -48,6 +48,10 @@ export default function Navbar() {
                     History
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[var(--color-accent-real)] transition-all group-hover:w-full"></span>
                   </Link>
+                  <Link href="/about" className="text-sm font-medium hover:text-[var(--color-accent-real)] transition-colors relative group">
+                    About Us
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[var(--color-accent-real)] transition-all group-hover:w-full"></span>
+                  </Link>
                   <Link href="/pricing" className="text-sm font-medium hover:text-[var(--color-accent-real)] transition-colors relative group">
                     Pricing
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[var(--color-accent-real)] transition-all group-hover:w-full"></span>
@@ -117,6 +121,7 @@ export default function Navbar() {
                 <>
                   <Link href="/upload" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium">Analyze</Link>
                   <Link href="/history" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium">History</Link>
+                  <Link href="/about" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium">About Us</Link>
                   <Link href="/pricing" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium">Pricing</Link>
                   {(user as any)?.role === 'admin' && (
                     <Link href="/admin" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium text-red-400">Admin Panel</Link>

@@ -94,15 +94,20 @@ def compute_perplexity_scores(text: str) -> dict:
             "sentence_perplexities": []
         }
         
+    import math
     avg_perplexity = np.mean(perplexities)
-    variance = np.var(perplexities)
     
-    # Normalize to 0-1 for AI probability
-    # AI tends to have perplexity < 50, human > 80. (Rough heuristic)
-    ppl_score = max(0.0, min(1.0, 1.0 - (avg_perplexity / 100.0)))
+    # Normalize using a sigmoid function
+    # AI text perplexity is often 20-50. Human is often 50-200.
+    # Sigmoid centered at 60 with steepness 0.06
+    ppl_score = 1.0 / (1.0 + math.exp(0.06 * (avg_perplexity - 60.0)))
     
-    # Burstiness: variance. Lower variance -> AI
-    burst_score = max(0.0, min(1.0, 1.0 - (variance / 1000.0)))
+    # Burstiness: Use coefficient of variation (CV = std/mean)
+    cv = (np.std(perplexities) / avg_perplexity) if avg_perplexity > 0 else 0.0
+    
+    # AI text CV typically 0.1-0.3, Human CV typically 0.4-1.0+
+    # Sigmoid centered at 0.35 with steepness 3.0
+    burst_score = 1.0 / (1.0 + math.exp(3.0 * (cv - 0.35)))
     
     return {
         "perplexity_score": float(ppl_score),
