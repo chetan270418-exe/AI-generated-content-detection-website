@@ -24,20 +24,6 @@ services:
     restart: unless-stopped
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-  celery_worker:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - MONGODB_URI=${MONGODB_URI}
-    depends_on:
-      - redis
-      - backend
-    restart: unless-stopped
-    # Use -P threads and --concurrency=2 to aggressively save RAM
-    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-P", "threads", "--concurrency=2"]
-
   frontend:
     build:
       context: ./frontend

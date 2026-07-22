@@ -5,7 +5,7 @@ import asyncio
 import redis.asyncio as aioredis
 from ..models.user import User
 from ..models.analysis import Analysis
-from ..utils.jwt import get_current_user
+from ..utils.jwt import get_current_user, verify_token
 from ..config import get_settings
 
 router = APIRouter()
@@ -67,14 +67,14 @@ async def redis_listener():
                 pass
 
 # Start the listener when module loads (safe — silently backs off if Redis is down)
-asyncio.create_task(redis_listener())
+_redis_listener_task = None
+def start_redis_listener():
+    global _redis_listener_task
+    if _redis_listener_task is None:
+        _redis_listener_task = asyncio.create_task(redis_listener())
 
 async def verify_admin(current_user: User = Depends(get_current_user)):
-    # Since we don't have a role field officially migrated everywhere yet, 
-    # we can check if their role is admin or if we want to hardcode an admin email
-    # For now we'll assume the role field exists or default to "user"
-    role = getattr(current_user, "role", "user")
-    if role != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
@@ -125,15 +125,34 @@ async def get_global_users(admin: User = Depends(verify_admin)):
             "id": str(u.id),
             "email": u.email,
             "plan": u.plan,
-            "role": getattr(u, "role", "user"),
-            "analyses_count": getattr(u, "analyses_count", 0),
+            "role": u.role,
+            "analyses_count": u.analyses_count,
             "created_at": u.created_at
         })
     return results
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # In a real production app, verify admin token here via query param
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4401)
+        return
+        
+    try:
+        payload = verify_token(token)
+        user_id = payload.get("sub")
+        if not user_id:
+            await websocket.close(code=4401)
+            return
+            
+        user = await User.get(user_id)
+        if not user or user.role != "admin":
+            await websocket.close(code=4401)
+            return
+    except Exception:
+        await websocket.close(code=4401)
+        return
+
     await manager.connect(websocket)
     try:
         while True:

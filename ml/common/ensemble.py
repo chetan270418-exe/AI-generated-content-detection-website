@@ -14,9 +14,9 @@ weighted signal combination AND an explicit disagreement-aware verdict.
 
 from typing import List, Dict
 
-AI_THRESHOLD = 0.62
-HUMAN_THRESHOLD = 0.38
-DISAGREEMENT_THRESHOLD = 0.35  # agreement below this = signals don't agree enough to trust
+AI_THRESHOLD = 0.55
+HUMAN_THRESHOLD = 0.45
+DISAGREEMENT_THRESHOLD = 0.20  # agreement below this = signals don't agree enough to trust
 
 
 def combine_signals(signals: List[Dict]) -> Dict:

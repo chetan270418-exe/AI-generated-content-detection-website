@@ -13,6 +13,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     plan: str
+    role: str
     analyses_count: int
     created_at: datetime
     

@@ -30,7 +30,7 @@ async def create_order(current_user: User = Depends(get_current_user)):
     if not razorpay_client:
         raise HTTPException(status_code=500, detail="Razorpay not configured")
         
-    amount = 999 * 100 # Rs 999
+    amount = 199 * 100 # Rs 199
     
     data = {
         "amount": amount,
@@ -45,7 +45,7 @@ async def create_order(current_user: User = Depends(get_current_user)):
         sub = Subscription(
             user_id=str(current_user.id),
             status="pending",
-            amount=999,
+            amount=199,
             razorpay_order_id=order["id"]
         )
         await sub.insert()

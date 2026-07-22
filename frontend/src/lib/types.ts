@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   plan: 'free_trial' | 'vip' | 'expired';
+  role: 'user' | 'admin';
   analyses_count: number;
   created_at: string;
 }

@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 def test_signup_validation(client):
     # Test invalid email
@@ -10,7 +10,7 @@ def test_signup_short_password(client):
     response = client.post("/api/auth/signup", json={"email": "test@example.com", "password": "short"})
     assert response.status_code == 422
 
-@patch("app.routers.auth.User.find_one")
+@patch("app.routers.auth.User.find_one", new_callable=AsyncMock)
 def test_signup_duplicate_email(mock_find_one, client):
     # Mock finding an existing user
     mock_find_one.return_value = {"email": "test@example.com"}

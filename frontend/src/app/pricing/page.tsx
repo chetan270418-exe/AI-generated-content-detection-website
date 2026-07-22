@@ -138,15 +138,15 @@ export default function PricingPage() {
           <ul className="space-y-4 mb-8">
             <li className="flex items-center gap-3 text-sm">
               <Check className="text-green-400 shrink-0" size={18} />
-              <span>Up to 50 content analyses</span>
+              <span>Up to 20 content analyses</span>
             </li>
             <li className="flex items-center gap-3 text-sm">
               <Check className="text-green-400 shrink-0" size={18} />
-              <span>Image, Text, PDF, and Video support</span>
+              <span>Image and Text support only</span>
             </li>
             <li className="flex items-center gap-3 text-sm">
               <Check className="text-green-400 shrink-0" size={18} />
-              <span>Basic reporting and history</span>
+              <span>Max 10MB per file</span>
             </li>
             <li className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
               <Check className="text-gray-500 shrink-0" size={18} />
@@ -175,7 +175,7 @@ export default function PricingPage() {
           <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
             Dictator VIP <Zap className="text-[var(--color-accent-real)]" size={20} fill="currentColor" />
           </h2>
-          <div className="text-4xl font-bold mb-6">₹999<span className="text-lg text-[var(--text-muted)] font-normal"> /mo</span></div>
+          <div className="text-4xl font-bold mb-6">₹199<span className="text-lg text-[var(--text-muted)] font-normal"> /mo</span></div>
           
           <ul className="space-y-4 mb-8">
             <li className="flex items-center gap-3 text-sm font-medium">
@@ -184,15 +184,15 @@ export default function PricingPage() {
             </li>
             <li className="flex items-center gap-3 text-sm">
               <Check className="text-[var(--color-accent-real)] shrink-0" size={18} />
-              <span>Priority processing queue (Zero wait time)</span>
+              <span>All formats (Image, Text, PDF, Video, Audio)</span>
             </li>
             <li className="flex items-center gap-3 text-sm">
               <Check className="text-[var(--color-accent-real)] shrink-0" size={18} />
-              <span>Advanced downloadable reports</span>
+              <span>Max 50MB per file</span>
             </li>
             <li className="flex items-center gap-3 text-sm">
               <Check className="text-[var(--color-accent-real)] shrink-0" size={18} />
-              <span>API access for bulk uploads (Coming soon)</span>
+              <span>Batch upload (up to 10 files)</span>
             </li>
           </ul>
 

@@ -20,7 +20,7 @@ import os
 import sys
 import joblib
 from datasets import load_dataset
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -84,7 +84,7 @@ def main():
 
     pipeline = Pipeline([
         ("scaler", StandardScaler()),
-        ("classifier", GradientBoostingClassifier(n_estimators=100, max_depth=4, random_state=42)),
+        ("classifier", LogisticRegression(max_iter=1000, class_weight="balanced")),
     ])
     pipeline.fit(X_train, y_train)
 

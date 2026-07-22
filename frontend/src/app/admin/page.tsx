@@ -34,7 +34,8 @@ export default function AdminDashboard() {
     if (!isAuthenticated || user?.role !== 'admin') return;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const wsUrl = apiUrl.replace(/^http/, 'ws') + '/api/admin/ws';
+    const token = localStorage.getItem('token');
+    const wsUrl = apiUrl.replace(/^http/, 'ws') + '/api/admin/ws' + (token ? `?token=${encodeURIComponent(token)}` : '');
     
     const ws = new WebSocket(wsUrl);
     

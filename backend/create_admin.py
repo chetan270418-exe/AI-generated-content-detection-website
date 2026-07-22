@@ -1,4 +1,6 @@
 import asyncio
+import os
+import secrets
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.models.user import User
@@ -12,36 +14,31 @@ async def main():
     client = AsyncIOMotorClient(settings.mongodb_uri)
     await init_beanie(database=client[settings.mongodb_db_name], document_models=[User, Analysis])
 
-    email = "admin@dictator.ai"
+    email = os.environ.get("ADMIN_EMAIL", "admin@dictator.ai")
+    raw_password = os.environ.get("ADMIN_PASSWORD")
+    
     user = await User.find_one(User.email == email)
+    
     if not user:
+        if not raw_password:
+            raw_password = secrets.token_urlsafe(12)
+            print(f"No ADMIN_PASSWORD provided. Generated random password: {raw_password}")
+            
         user = User(
             email=email,
-            hashed_password=hash_password("admin123"),
+            hashed_password=hash_password(raw_password),
             plan="vip",
             trial_start=datetime.utcnow()
         )
+    else:
+        if raw_password:
+            user.hashed_password = hash_password(raw_password)
+            
+    user.role = "admin"
+    await user.save()
     
-    # Python's dynamic attributes or Beanie might not store 'role' if it's not defined in the model.
-    # Wait, earlier I saw: getattr(current_user, "role", "user")
-    # Let's check if role exists in User model. We can just use the underlying dictionary or motor if Beanie strips it.
-    
-    # If the model does not have role, Beanie will discard extra fields. 
-    # Let's check the User model first or just use raw pymongo.
-    db = client[settings.mongodb_db_name]
-    
-    if not user.id:
-        await user.insert()
-        print("Created new admin user.")
-    
-    # Force update the role field in MongoDB directly just in case Beanie doesn't support extra fields
-    await db["users"].update_one(
-        {"email": email},
-        {"$set": {"role": "admin"}}
-    )
     print("Admin user created/updated successfully!")
-    print("Email: admin@dictator.ai")
-    print("Password: admin123")
+    print(f"Email: {email}")
 
 if __name__ == "__main__":
     asyncio.run(main())

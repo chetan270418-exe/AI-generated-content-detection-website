@@ -8,6 +8,7 @@ class User(Document):
     plan: str = "free_trial"
     trial_start: datetime = Field(default_factory=datetime.utcnow)
     analyses_count: int = 0
+    role: str = "user"
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:

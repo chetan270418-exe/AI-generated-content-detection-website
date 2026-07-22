@@ -28,7 +28,7 @@ async def signup(user_data: UserSignup):
     await publish_admin_event("user_signup", {
         "email": user.email,
         "plan": user.plan,
-        "role": getattr(user, "role", "user")
+        "role": user.role
     })
     
     # Generate token
@@ -38,6 +38,7 @@ async def signup(user_data: UserSignup):
         id=str(user.id),
         email=user.email,
         plan=user.plan,
+        role=user.role,
         analyses_count=user.analyses_count,
         created_at=user.created_at
     )
@@ -59,6 +60,7 @@ async def login(user_data: UserLogin):
         id=str(user.id),
         email=user.email,
         plan=user.plan,
+        role=user.role,
         analyses_count=user.analyses_count,
         created_at=user.created_at
     )

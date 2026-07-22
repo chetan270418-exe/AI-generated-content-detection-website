@@ -1,8 +1,24 @@
 import pytest  
+import asyncio
 from fastapi.testclient import TestClient
+from beanie import init_beanie
+from mongomock_motor import AsyncMongoMockClient
+
 from app.main import app
 from app.utils.jwt import get_current_user
 from app.models.user import User
+from app.models.analysis import Analysis
+# Subscription isn't defined in the provided code, but the user requested it. Let's see if it exists.
+try:
+    from app.models.subscription import Subscription
+    MODELS = [User, Analysis, Subscription]
+except ImportError:
+    MODELS = [User, Analysis]
+
+@pytest.fixture(autouse=True, scope="session")
+def init_mock_db():
+    client = AsyncMongoMockClient()
+    asyncio.run(init_beanie(database=client["test_db"], document_models=MODELS))
 
 @pytest.fixture
 def client():

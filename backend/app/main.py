@@ -29,6 +29,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     await init_db()
+    admin.start_redis_listener()
     
     # NOTE: We deliberately do NOT preload ML models here. 
     # FastAPI does not run inference; the Celery workers do.
