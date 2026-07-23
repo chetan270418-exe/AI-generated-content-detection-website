@@ -253,6 +253,51 @@ export default function ResultPage() {
                   </div>
                 </div>
               )}
+
+              {result.detailed_results?.sentence_heatmap && (
+                <div className="mt-4 border-t border-white/10 pt-6">
+                  <h4 className="text-sm font-bold text-[var(--color-accent-ai)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-accent-ai)] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-[var(--color-accent-ai)]"></span>
+                    </span>
+                    Sentence-by-Sentence AI Heatmap (XAI)
+                  </h4>
+                  <p className="text-xs text-[var(--text-muted)] mb-3">
+                    Red indicates high AI probability, Green indicates high human probability, Yellow indicates mixed signals.
+                  </p>
+                  <div className="rounded-[16px] overflow-hidden border border-white/10 bg-black/50 shadow-lg p-4 leading-relaxed text-lg">
+                    {result.detailed_results.sentence_heatmap.map((s: { text: string; ai_probability: number }, i: number) => {
+                      let bgColor = 'transparent';
+                      if (s.ai_probability > 0.7) bgColor = 'rgba(239, 68, 68, 0.2)'; // Red
+                      else if (s.ai_probability < 0.3) bgColor = 'rgba(34, 197, 94, 0.2)'; // Green
+                      else bgColor = 'rgba(234, 179, 8, 0.2)'; // Yellow
+                      
+                      return (
+                        <span key={i} style={{ backgroundColor: bgColor }} className="rounded px-1 mx-0.5 transition-colors hover:bg-opacity-40" title={`AI Probability: ${(s.ai_probability * 100).toFixed(1)}%`}>
+                          {s.text}{' '}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {result.detailed_results?.spectrogram_url && (
+                <div className="mt-4 border-t border-white/10 pt-6">
+                  <h4 className="text-sm font-bold text-[var(--color-accent-ai)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-accent-ai)] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-[var(--color-accent-ai)]"></span>
+                    </span>
+                    Audio Forensic Spectrogram
+                  </h4>
+                  <p className="text-xs text-[var(--text-muted)] mb-3">Visualizing frequency distribution. Synthetic voices often lack high-frequency noise and show overly smooth MFCC variance.</p>
+                  <div className="rounded-[16px] overflow-hidden border border-white/10 bg-black/50 shadow-lg">
+                    <img src={result.detailed_results.spectrogram_url} alt="Audio Spectrogram" className="w-full h-auto object-contain max-h-[300px]" />
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

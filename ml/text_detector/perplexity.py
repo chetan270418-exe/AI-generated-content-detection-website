@@ -109,9 +109,21 @@ def compute_perplexity_scores(text: str) -> dict:
     # Sigmoid centered at 0.35 with steepness 3.0
     burst_score = 1.0 / (1.0 + math.exp(3.0 * (cv - 0.35)))
     
+    # Sentence Heatmap
+    # Normalize individual sentence perplexities to an AI probability score (0 to 1)
+    sentence_heatmap = []
+    for s, p in zip(sentences, perplexities):
+        # Using the same logic: AI text perplexity is lower.
+        s_prob = 1.0 / (1.0 + math.exp(0.06 * (p - 60.0)))
+        sentence_heatmap.append({
+            "text": s,
+            "ai_probability": float(s_prob)
+        })
+
     return {
         "perplexity_score": float(ppl_score),
         "burstiness_score": float(burst_score),
         "avg_perplexity": float(avg_perplexity),
-        "sentence_perplexities": [float(p) for p in perplexities]
+        "sentence_perplexities": [float(p) for p in perplexities],
+        "sentence_heatmap": sentence_heatmap
     }

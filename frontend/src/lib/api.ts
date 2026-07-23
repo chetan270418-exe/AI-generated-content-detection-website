@@ -44,11 +44,12 @@ export const authApi = {
 };
 
 export const analysisApi = {
-  analyzeImage: async (file: File): Promise<{ analysis_id: string; status: string }> => {
+  analyzeImage: async (file: File, onUploadProgress?: (progressEvent: any) => void): Promise<{ analysis_id: string; status: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     const res = await api.post('/api/analyze/image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
     });
     return res.data;
   },
@@ -56,35 +57,39 @@ export const analysisApi = {
     const res = await api.post('/api/analyze/text', { text });
     return res.data;
   },
-  analyzePdf: async (file: File): Promise<{ analysis_id: string; status: string }> => {
+  analyzePdf: async (file: File, onUploadProgress?: (progressEvent: any) => void): Promise<{ analysis_id: string; status: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     const res = await api.post('/api/analyze/pdf', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
     });
     return res.data;
   },
-  analyzeVideo: async (file: File): Promise<{ analysis_id: string; status: string }> => {
+  analyzeVideo: async (file: File, onUploadProgress?: (progressEvent: any) => void): Promise<{ analysis_id: string; status: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     const res = await api.post('/api/analyze/video', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
     });
     return res.data;
   },
-  analyzeAudio: async (file: File): Promise<{ analysis_id: string; status: string }> => {
+  analyzeAudio: async (file: File, onUploadProgress?: (progressEvent: any) => void): Promise<{ analysis_id: string; status: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     const res = await api.post('/api/analyze/audio', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
     });
     return res.data;
   },
-  analyzeBatch: async (files: File[]) => {
+  analyzeBatch: async (files: File[], onUploadProgress?: (progressEvent: any) => void) => {
     const formData = new FormData();
     files.forEach(f => formData.append('files', f));
     const res = await api.post('/api/analyze/batch', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
     });
     return res.data;
   },

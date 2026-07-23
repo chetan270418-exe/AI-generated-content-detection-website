@@ -20,6 +20,39 @@ def predict_audio(audio_path: str) -> dict:
             verdict = "inconclusive"
             explanation = f"Audio analysis is inconclusive (score: {prob:.2f}). Ensure the audio contains clear speech without excessive background noise."
 
+        # Lift spectrogram_url to root for easy frontend access
+        details = result.get("details", {})
+        spectrogram_url = details.get("spectrogram_url")
+        if spectrogram_url:
+            result["spectrogram_url"] = spectrogram_url
+
+        # Build signals array for frontend ScoreChart
+        signals = []
+        if result.get("source") == "librosa_heuristic":
+            import math
+            # Reconstruct the calibrated scores for visualization
+            mean_rolloff = details.get("mean_rolloff", 0)
+            score_rolloff = 1.0 / (1.0 + math.exp(0.002 * (mean_rolloff - 3500)))
+            
+            mfcc_var = details.get("mfcc_variance", 0)
+            score_mfcc = 1.0 / (1.0 + math.exp(0.05 * (mfcc_var - 150)))
+            
+            mean_zcr = details.get("mean_zcr", 0)
+            score_zcr = 1.0 / (1.0 + math.exp(100.0 * (mean_zcr - 0.06)))
+            
+            signals = [
+                {"name": "High Freq Rolloff", "ai_probability": score_rolloff},
+                {"name": "Timbre Consistency (MFCC)", "ai_probability": score_mfcc},
+                {"name": "Breath/Sibilance (ZCR)", "ai_probability": score_zcr}
+            ]
+        else:
+            signals = [
+                {"name": "HF Audio Deepfake Model", "ai_probability": result.get("ai_probability", 0.5)}
+            ]
+            
+        result["signals"] = signals
+        result["agreement"] = 1.0 # Single source logic
+
         return {
             "verdict": verdict,
             "confidence": result.get("confidence", 0.0),

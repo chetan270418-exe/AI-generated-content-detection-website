@@ -21,13 +21,37 @@ export default function Home() {
       <section className="relative h-[90vh] flex items-center justify-center overflow-hidden">
         <HeroScene />
         
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto mt-[-10vh]">
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 animate-fade-in">
-            Detect <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent-ai)] to-[var(--color-accent-real)]">AI-Generated</span> Content
-          </h1>
-          <p className="text-xl md:text-2xl text-[var(--text-muted)] mb-10 max-w-2xl mx-auto animate-slide-up" style={{animationDelay: '0.2s'}}>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative z-10 text-center px-4 max-w-4xl mx-auto mt-[-10vh]"
+        >
+          <motion.h1 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.2, type: "spring", stiffness: 100 }}
+            className="text-5xl md:text-7xl font-bold tracking-tight mb-6"
+          >
+            Detect{" "}
+            <motion.span 
+              initial={{ backgroundPosition: "0% 50%" }}
+              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+              className="bg-[length:200%_auto] bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent-ai)] via-[#a855f7] to-[var(--color-accent-real)]"
+            >
+              AI-Generated
+            </motion.span>{" "}
+            Content
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-xl md:text-2xl text-[var(--text-muted)] mb-10 max-w-2xl mx-auto"
+          >
             Upload images, text, PDFs, videos, or audio and get an instant authenticity analysis powered by advanced ML models and visual explainability.
-          </p>
+          </motion.p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{animationDelay: '0.4s'}}>
             <Link 
               href={isAuthenticated ? "/upload" : "/signup"}
@@ -42,7 +66,7 @@ export default function Home() {
               Learn More
             </a>
           </div>
-        </div>
+        </motion.div>
         
         <div className="absolute bottom-10 left-0 right-0 flex justify-center animate-bounce">
           <div className="w-[30px] h-[50px] rounded-full border-2 border-white/20 flex justify-center p-2">

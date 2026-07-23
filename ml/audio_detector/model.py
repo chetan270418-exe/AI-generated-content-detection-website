@@ -1,6 +1,10 @@
 import os
 import librosa
 import numpy as np
+import matplotlib
+matplotlib.use('Agg') # Headless mode
+import matplotlib.pyplot as plt
+import uuid
 
 class AudioDetectorModel:
     def __init__(self):
@@ -95,6 +99,21 @@ class AudioDetectorModel:
             ai_score = 0.4 * score_rolloff + 0.4 * score_mfcc + 0.2 * score_zcr
             ai_score = max(0.0, min(1.0, ai_score))
             
+            # 5. Generate and Save Mel-Spectrogram Image for XAI
+            mel_spec = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
+            mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
+            
+            plt.figure(figsize=(10, 4))
+            librosa.display.specshow(mel_spec_db, sr=sr, x_axis='time', y_axis='mel', cmap='magma')
+            plt.colorbar(format='%+2.0f dB')
+            plt.title('Audio Mel-Spectrogram')
+            plt.tight_layout()
+            
+            spectrogram_filename = f"spectrogram_{uuid.uuid4().hex[:8]}.png"
+            spectrogram_path = os.path.join("uploads", spectrogram_filename)
+            plt.savefig(spectrogram_path)
+            plt.close()
+            
             return {
                 "label": "fake" if ai_score > 0.6 else "real",
                 "confidence": max(ai_score, 1 - ai_score),
@@ -104,7 +123,8 @@ class AudioDetectorModel:
                     "mean_rolloff": mean_rolloff,
                     "mean_zcr": mean_zcr,
                     "mfcc_variance": mfcc_var,
-                    "mean_centroid": mean_cent
+                    "mean_centroid": mean_cent,
+                    "spectrogram_url": f"/uploads/{spectrogram_filename}"
                 }
             }
         except Exception as e:

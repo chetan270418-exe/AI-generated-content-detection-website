@@ -110,6 +110,9 @@ def predict_text(text: str) -> dict:
         detailed_results["agreement"] = ensemble_result["agreement"]
         detailed_results["final_ai_probability"] = ensemble_result["final_ai_probability"]
 
+        if "perplexity_output" in detailed_results and "sentence_heatmap" in detailed_results["perplexity_output"]:
+            detailed_results["sentence_heatmap"] = detailed_results["perplexity_output"]["sentence_heatmap"]
+
         return {
             "verdict": verdict,
             "confidence": ensemble_result["confidence"],

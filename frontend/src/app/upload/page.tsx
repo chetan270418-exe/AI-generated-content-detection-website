@@ -17,7 +17,31 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [text, setText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isSubmitting) {
+      setUploadProgress(0);
+      interval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 95) return prev;
+          // Slower progress as it gets closer to 95%
+          const increment = Math.max(1, Math.floor((95 - prev) * 0.1));
+          return prev + increment;
+        });
+      }, 300);
+    } else {
+      setUploadProgress(0);
+    }
+    return () => clearInterval(interval);
+  }, [isSubmitting]);
+
+  const onUploadProgress = (e: any) => {
+    // We ignore the real upload progress since local uploads are instant.
+    // The simulated progress above handles the visual effect perfectly.
+  }
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -34,7 +58,7 @@ export default function UploadPage() {
     setError('')
     setIsSubmitting(true)
     try {
-      const res = await analysisApi.analyzeImage(file)
+      const res = await analysisApi.analyzeImage(file, onUploadProgress)
       router.push(`/result/${res.analysis_id}`)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to submit image for analysis')
@@ -60,7 +84,7 @@ export default function UploadPage() {
     setError('')
     setIsSubmitting(true)
     try {
-      const res = await analysisApi.analyzePdf(file)
+      const res = await analysisApi.analyzePdf(file, onUploadProgress)
       router.push(`/result/${res.analysis_id}`)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to submit PDF for analysis')
@@ -73,7 +97,7 @@ export default function UploadPage() {
     setError('')
     setIsSubmitting(true)
     try {
-      const res = await analysisApi.analyzeVideo(file)
+      const res = await analysisApi.analyzeVideo(file, onUploadProgress)
       router.push(`/result/${res.analysis_id}`)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to submit video for analysis')
@@ -86,7 +110,7 @@ export default function UploadPage() {
     setError('')
     setIsSubmitting(true)
     try {
-      const res = await analysisApi.analyzeAudio(file)
+      const res = await analysisApi.analyzeAudio(file, onUploadProgress)
       router.push(`/result/${res.analysis_id}`)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to submit audio for analysis')
@@ -109,12 +133,41 @@ export default function UploadPage() {
     setError('')
     setIsSubmitting(true)
     try {
-      await analysisApi.analyzeBatch(batchFiles)
+      await analysisApi.analyzeBatch(batchFiles, onUploadProgress)
       router.push(`/history`) // Go to history to see them all
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to submit batch for analysis')
       setIsSubmitting(false)
     }
+  }
+
+  const renderSubmitButton = (onClick: () => void, disabled: boolean, label: string) => {
+    if (isSubmitting) {
+      return (
+        <div className="w-full relative py-4 rounded-[16px] bg-black/40 border border-[var(--color-accent-real)]/30 overflow-hidden shadow-inner flex items-center justify-center">
+          <div 
+            className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-[var(--color-accent-real)]/40 to-blue-500/40 transition-all duration-300 ease-out"
+            style={{ width: `${uploadProgress}%` }}
+          />
+          <div className="relative z-10 flex items-center gap-2 font-bold text-white text-sm">
+            <Loader2 className="animate-spin text-[var(--color-accent-real)]" size={16} />
+            {uploadProgress < 95 ? `Analyzing Content... ${uploadProgress}%` : 'Finalizing results... 99%'}
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <motion.button
+        whileHover={{ scale: !disabled ? 1.02 : 1 }}
+        whileTap={{ scale: !disabled ? 0.98 : 1 }}
+        onClick={() => { setUploadProgress(0); onClick(); }}
+        disabled={disabled}
+        className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
+      >
+        {label}
+      </motion.button>
+    );
   }
 
   return (
@@ -278,15 +331,7 @@ export default function UploadPage() {
               >
                 <FileUploader onFileSelect={setFile} />
                 
-                <motion.button
-                  whileHover={{ scale: file && !isSubmitting ? 1.02 : 1 }}
-                  whileTap={{ scale: file && !isSubmitting ? 0.98 : 1 }}
-                  onClick={handleSubmitImage}
-                  disabled={!file || isSubmitting}
-                  className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin text-black" /> : 'Run Image Analysis'}
-                </motion.button>
+                {renderSubmitButton(handleSubmitImage, !file, 'Run Image Analysis')}
               </motion.div>
             ) : activeTab === 'text' ? (
               <motion.div 
@@ -311,15 +356,7 @@ export default function UploadPage() {
                   </div>
                 </div>
                 
-                <motion.button
-                  whileHover={{ scale: text.trim() && !isSubmitting ? 1.02 : 1 }}
-                  whileTap={{ scale: text.trim() && !isSubmitting ? 0.98 : 1 }}
-                  onClick={handleSubmitText}
-                  disabled={!text.trim() || isSubmitting}
-                  className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin text-black" /> : 'Run Text Analysis'}
-                </motion.button>
+                {renderSubmitButton(handleSubmitText, !text.trim(), 'Run Text Analysis')}
               </motion.div>
             ) : activeTab === 'pdf' ? (
               <motion.div 
@@ -336,15 +373,7 @@ export default function UploadPage() {
                   supportText="Supports PDF" 
                 />
                 
-                <motion.button
-                  whileHover={{ scale: file && !isSubmitting ? 1.02 : 1 }}
-                  whileTap={{ scale: file && !isSubmitting ? 0.98 : 1 }}
-                  onClick={handleSubmitPdf}
-                  disabled={!file || isSubmitting}
-                  className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin text-black" /> : 'Run PDF Analysis'}
-                </motion.button>
+                {renderSubmitButton(handleSubmitPdf, !file, 'Run PDF Analysis')}
               </motion.div>
             ) : activeTab === 'video' ? (
               <motion.div 
@@ -362,15 +391,7 @@ export default function UploadPage() {
                   maxSizeMB={50}
                 />
                 
-                <motion.button
-                  whileHover={{ scale: file && !isSubmitting ? 1.02 : 1 }}
-                  whileTap={{ scale: file && !isSubmitting ? 0.98 : 1 }}
-                  onClick={handleSubmitVideo}
-                  disabled={!file || isSubmitting}
-                  className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin text-black" /> : 'Run Video Analysis'}
-                </motion.button>
+                {renderSubmitButton(handleSubmitVideo, !file, 'Run Video Analysis')}
               </motion.div>
             ) : activeTab === 'audio' ? (
               <motion.div 
@@ -388,15 +409,7 @@ export default function UploadPage() {
                   maxSizeMB={20}
                 />
                 
-                <motion.button
-                  whileHover={{ scale: file && !isSubmitting ? 1.02 : 1 }}
-                  whileTap={{ scale: file && !isSubmitting ? 0.98 : 1 }}
-                  onClick={handleSubmitAudio}
-                  disabled={!file || isSubmitting}
-                  className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin text-black" /> : 'Run Audio Analysis'}
-                </motion.button>
+                {renderSubmitButton(handleSubmitAudio, !file, 'Run Audio Analysis')}
               </motion.div>
             ) : activeTab === 'batch' ? (
               <motion.div 
@@ -439,15 +452,7 @@ export default function UploadPage() {
                   )}
                 </div>
                 
-                <motion.button
-                  whileHover={{ scale: batchFiles.length > 0 && !isSubmitting ? 1.02 : 1 }}
-                  whileTap={{ scale: batchFiles.length > 0 && !isSubmitting ? 0.98 : 1 }}
-                  onClick={handleSubmitBatch}
-                  disabled={batchFiles.length === 0 || isSubmitting}
-                  className="w-full py-4 rounded-[16px] bg-gradient-to-r from-[var(--color-accent-real)] to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex justify-center items-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin text-black" /> : `Analyze ${batchFiles.length} files in background`}
-                </motion.button>
+                {renderSubmitButton(handleSubmitBatch, batchFiles.length === 0, `Analyze ${batchFiles.length} files in background`)}
               </motion.div>
             ) : null}
           </AnimatePresence>
