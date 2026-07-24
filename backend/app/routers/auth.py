@@ -186,8 +186,7 @@ async def forgot_password(data: ForgotPasswordRequest):
     """
     user = await User.find_one(User.email == data.email)
     if not user:
-        # Don't reveal that the email doesn't exist (security best practice)
-        return {"message": "If the email exists, a reset code has been sent", "email": data.email}
+        raise HTTPException(status_code=404, detail="Email address not found")
     
     otp = generate_otp()
     user.otp_code = otp
