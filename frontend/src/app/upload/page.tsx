@@ -36,6 +36,7 @@ export default function UploadPage() {
     { code: 'fr', name: 'French' },
     { code: 'de', name: 'German' },
     { code: 'hi', name: 'Hindi' },
+    { code: 'mr', name: 'Marathi' },
     { code: 'ja', name: 'Japanese' },
     { code: 'zh-CN', name: 'Chinese (Simplified)' }
   ]
