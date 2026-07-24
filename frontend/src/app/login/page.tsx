@@ -5,6 +5,7 @@ import { authApi } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -13,6 +14,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { login } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,7 +25,17 @@ export default function Login() {
       login(data)
       window.location.href = '/upload' // Use window.location to ensure full state reset
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to login')
+      const detail = err.response?.data?.detail || 'Failed to login'
+      
+      // If the error is about email verification, redirect to verify page
+      if (err.response?.status === 403 && detail.includes('not verified')) {
+        setError(detail)
+        setTimeout(() => {
+          router.push(`/verify?email=${encodeURIComponent(email)}`)
+        }, 2000)
+      } else {
+        setError(detail)
+      }
       setLoading(false)
     }
   }
@@ -68,6 +80,11 @@ export default function Login() {
               >
                 {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
+            </div>
+            <div className="text-right mt-1">
+              <Link href="/forgot-password" className="text-xs text-[var(--color-accent-real)] hover:underline">
+                Forgot Password?
+              </Link>
             </div>
           </div>
 

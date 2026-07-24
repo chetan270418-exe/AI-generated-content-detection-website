@@ -19,6 +19,15 @@ class Settings(BaseSettings):
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""
     
+    # SMTP Email Settings (Gmail App Password)
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    
+    otp_expiry_minutes: int = 10
+    
     frontend_url: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')

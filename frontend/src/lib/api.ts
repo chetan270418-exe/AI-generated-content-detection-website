@@ -33,12 +33,28 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-  signup: async (email: string, password: string): Promise<AuthResponse> => {
+  signup: async (email: string, password: string) => {
     const res = await api.post('/api/auth/signup', { email, password });
     return res.data;
   },
   login: async (email: string, password: string): Promise<AuthResponse> => {
     const res = await api.post('/api/auth/login', { email, password });
+    return res.data;
+  },
+  verifyOtp: async (email: string, otp_code: string): Promise<AuthResponse> => {
+    const res = await api.post('/api/auth/verify-otp', { email, otp_code });
+    return res.data;
+  },
+  resendOtp: async (email: string) => {
+    const res = await api.post('/api/auth/resend-otp', { email });
+    return res.data;
+  },
+  forgotPassword: async (email: string) => {
+    const res = await api.post('/api/auth/forgot-password', { email });
+    return res.data;
+  },
+  resetPassword: async (email: string, otp_code: string, new_password: string) => {
+    const res = await api.post('/api/auth/reset-password', { email, otp_code, new_password });
     return res.data;
   },
 };
