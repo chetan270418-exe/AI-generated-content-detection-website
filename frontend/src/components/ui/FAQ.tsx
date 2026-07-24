@@ -21,10 +21,6 @@ export default function FAQ() {
     {
       question: "What happens to the files I upload?",
       answer: "Your privacy is our priority. Files are processed securely, analyzed in memory, and immediately deleted from our servers after the analysis is complete. We do not use your uploads to train our models."
-    },
-    {
-      question: "What is the 'Humanize' feature?",
-      answer: "The 'Humanize' feature (currently in beta) takes text that has been flagged as AI-generated and subtly restructures the syntax, vocabulary, and sentence variation (burstiness) to sound more natural and conversational, reducing the robotic tone typical of LLMs."
     }
   ]
 

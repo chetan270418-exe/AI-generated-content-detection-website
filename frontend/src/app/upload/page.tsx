@@ -360,13 +360,6 @@ export default function UploadPage() {
                 
                 <div className="flex flex-wrap gap-4 mt-4">
                   <button 
-                    onClick={() => alert("Humanize feature is coming soon! This will restructure the text to sound less robotic.")}
-                    disabled={!text.trim() || isSubmitting}
-                    className="flex-1 min-w-[150px] py-3 rounded-[12px] bg-[var(--color-accent-real)]/10 text-[var(--color-accent-real)] border border-[var(--color-accent-real)]/30 hover:bg-[var(--color-accent-real)] hover:text-white transition-all flex items-center justify-center gap-2 font-medium disabled:opacity-50"
-                  >
-                    <Wand2 size={18} /> Humanize AI Text
-                  </button>
-                  <button 
                     onClick={() => alert("AI Translator feature is coming soon! Seamlessly translate content while preserving tone.")}
                     disabled={!text.trim() || isSubmitting}
                     className="flex-1 min-w-[150px] py-3 rounded-[12px] bg-[var(--color-accent-ai)]/10 text-[var(--color-accent-ai)] border border-[var(--color-accent-ai)]/30 hover:bg-[var(--color-accent-ai)] hover:text-white transition-all flex items-center justify-center gap-2 font-medium disabled:opacity-50"
