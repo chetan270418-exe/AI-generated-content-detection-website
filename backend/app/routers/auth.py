@@ -26,10 +26,17 @@ async def signup(user_data: UserSignup):
     existing_user = await User.find_one(User.email == user_data.email)
     if existing_user:
         if not existing_user.is_verified:
+            # Rate limiting
+            if existing_user.last_otp_sent_at and datetime.utcnow() < existing_user.last_otp_sent_at + timedelta(seconds=60):
+                raise HTTPException(status_code=429, detail="Please wait 60 seconds before requesting another code")
+                
             # Re-send OTP for unverified accounts
             otp = generate_otp()
-            existing_user.otp_code = otp
+            existing_user.otp_code = hash_password(otp)
             existing_user.otp_expires_at = datetime.utcnow() + timedelta(minutes=settings.otp_expiry_minutes)
+            existing_user.last_otp_sent_at = datetime.utcnow()
+            existing_user.otp_failed_attempts = 0
+            existing_user.otp_locked_until = None
             existing_user.hashed_password = hash_password(user_data.password)
             await existing_user.save()
             
@@ -52,8 +59,9 @@ async def signup(user_data: UserSignup):
         plan="free_trial",
         trial_start=datetime.utcnow(),
         is_verified=False,
-        otp_code=otp,
-        otp_expires_at=datetime.utcnow() + timedelta(minutes=settings.otp_expiry_minutes)
+        otp_code=hash_password(otp),
+        otp_expires_at=datetime.utcnow() + timedelta(minutes=settings.otp_expiry_minutes),
+        last_otp_sent_at=datetime.utcnow()
     )
     await user.insert()
     
@@ -83,6 +91,9 @@ async def verify_otp(data: VerifyOTPRequest):
     
     if user.is_verified:
         raise HTTPException(status_code=400, detail="Email is already verified")
+        
+    if user.otp_locked_until and datetime.utcnow() < user.otp_locked_until:
+        raise HTTPException(status_code=429, detail="Account locked due to too many failed attempts. Try again later.")
     
     if not user.otp_code or not user.otp_expires_at:
         raise HTTPException(status_code=400, detail="No OTP was generated. Please request a new one.")
@@ -90,13 +101,19 @@ async def verify_otp(data: VerifyOTPRequest):
     if datetime.utcnow() > user.otp_expires_at:
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
     
-    if user.otp_code != data.otp_code:
+    if not verify_password(data.otp_code, user.otp_code):
+        user.otp_failed_attempts += 1
+        if user.otp_failed_attempts >= 5:
+            user.otp_locked_until = datetime.utcnow() + timedelta(minutes=15)
+        await user.save()
         raise HTTPException(status_code=400, detail="Invalid OTP code")
     
     # Activate account
     user.is_verified = True
     user.otp_code = None
     user.otp_expires_at = None
+    user.otp_failed_attempts = 0
+    user.otp_locked_until = None
     await user.save()
     
     # Generate JWT
@@ -127,10 +144,16 @@ async def resend_otp(data: ResendOTPRequest):
     if user.is_verified:
         raise HTTPException(status_code=400, detail="Email is already verified")
     
+    if user.last_otp_sent_at and datetime.utcnow() < user.last_otp_sent_at + timedelta(seconds=60):
+        raise HTTPException(status_code=429, detail="Please wait 60 seconds before requesting another code")
+
     # Generate new OTP
     otp = generate_otp()
-    user.otp_code = otp
+    user.otp_code = hash_password(otp)
     user.otp_expires_at = datetime.utcnow() + timedelta(minutes=settings.otp_expiry_minutes)
+    user.last_otp_sent_at = datetime.utcnow()
+    user.otp_failed_attempts = 0
+    user.otp_locked_until = None
     await user.save()
     
     sent = send_otp_email(user.email, otp, purpose="verify")
@@ -154,11 +177,15 @@ async def login(user_data: UserLogin):
     
     if not user.is_verified:
         # Re-send OTP automatically and tell the user
-        otp = generate_otp()
-        user.otp_code = otp
-        user.otp_expires_at = datetime.utcnow() + timedelta(minutes=settings.otp_expiry_minutes)
-        await user.save()
-        send_otp_email(user.email, otp, purpose="verify")
+        if not user.last_otp_sent_at or datetime.utcnow() >= user.last_otp_sent_at + timedelta(seconds=60):
+            otp = generate_otp()
+            user.otp_code = hash_password(otp)
+            user.otp_expires_at = datetime.utcnow() + timedelta(minutes=settings.otp_expiry_minutes)
+            user.last_otp_sent_at = datetime.utcnow()
+            user.otp_failed_attempts = 0
+            user.otp_locked_until = None
+            await user.save()
+            send_otp_email(user.email, otp, purpose="verify")
         
         raise HTTPException(
             status_code=403,
@@ -186,11 +213,17 @@ async def forgot_password(data: ForgotPasswordRequest):
     """
     user = await User.find_one(User.email == data.email)
     if not user:
-        raise HTTPException(status_code=404, detail="Email address not found")
+        return {"message": "If the email exists, a reset code has been sent", "email": data.email}
+        
+    if user.last_otp_sent_at and datetime.utcnow() < user.last_otp_sent_at + timedelta(seconds=60):
+        raise HTTPException(status_code=429, detail="Please wait 60 seconds before requesting another code")
     
     otp = generate_otp()
-    user.otp_code = otp
+    user.otp_code = hash_password(otp)
     user.otp_expires_at = datetime.utcnow() + timedelta(minutes=settings.otp_expiry_minutes)
+    user.last_otp_sent_at = datetime.utcnow()
+    user.otp_failed_attempts = 0
+    user.otp_locked_until = None
     await user.save()
     
     send_otp_email(user.email, otp, purpose="reset")
@@ -210,10 +243,17 @@ async def reset_password(data: ResetPasswordRequest):
     if not user.otp_code or not user.otp_expires_at:
         raise HTTPException(status_code=400, detail="No reset code was requested")
     
+    if user.otp_locked_until and datetime.utcnow() < user.otp_locked_until:
+        raise HTTPException(status_code=429, detail="Account locked due to too many failed attempts. Try again later.")
+
     if datetime.utcnow() > user.otp_expires_at:
         raise HTTPException(status_code=400, detail="Reset code has expired. Please request a new one.")
     
-    if user.otp_code != data.otp_code:
+    if not verify_password(data.otp_code, user.otp_code):
+        user.otp_failed_attempts += 1
+        if user.otp_failed_attempts >= 5:
+            user.otp_locked_until = datetime.utcnow() + timedelta(minutes=15)
+        await user.save()
         raise HTTPException(status_code=400, detail="Invalid reset code")
     
     # Update password

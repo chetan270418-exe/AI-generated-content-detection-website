@@ -16,6 +16,9 @@ class User(Document):
     is_verified: bool = False
     otp_code: Optional[str] = None
     otp_expires_at: Optional[datetime] = None
+    last_otp_sent_at: Optional[datetime] = None
+    otp_failed_attempts: int = 0
+    otp_locked_until: Optional[datetime] = None
 
     class Settings:
         name = "users"
