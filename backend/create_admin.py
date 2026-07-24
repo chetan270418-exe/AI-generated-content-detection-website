@@ -35,6 +35,7 @@ async def main():
             user.hashed_password = hash_password(raw_password)
             
     user.role = "admin"
+    user.is_verified = True
     await user.save()
     
     print("Admin user created/updated successfully!")

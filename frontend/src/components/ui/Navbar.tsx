@@ -56,6 +56,10 @@ export default function Navbar() {
                     Pricing
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[var(--color-accent-real)] transition-all group-hover:w-full"></span>
                   </Link>
+                  <Link href="/feedback" className="text-sm font-medium hover:text-[var(--color-accent-real)] transition-colors relative group">
+                    Feedback
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[var(--color-accent-real)] transition-all group-hover:w-full"></span>
+                  </Link>
                   {(user as any)?.role === 'admin' && (
                     <Link href="/admin" className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors relative group">
                       Admin
@@ -123,6 +127,7 @@ export default function Navbar() {
                   <Link href="/history" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium">History</Link>
                   <Link href="/about" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium">About Us</Link>
                   <Link href="/pricing" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium">Pricing</Link>
+                  <Link href="/feedback" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium">Feedback</Link>
                   {(user as any)?.role === 'admin' && (
                     <Link href="/admin" className="block px-3 py-2 rounded-[12px] hover:bg-white/5 font-medium text-red-400">Admin Panel</Link>
                   )}

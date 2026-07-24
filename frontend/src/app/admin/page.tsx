@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import api from '@/lib/api'
-import { Users, Activity, Loader2, ShieldCheck, FileCheck, Brain } from 'lucide-react'
+import { Users, Activity, Loader2, ShieldCheck, FileCheck, Brain, MessageSquare, CheckCircle2, Circle } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function AdminDashboard() {
@@ -14,9 +14,10 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null)
   const [analyses, setAnalyses] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [feedbacks, setFeedbacks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [tab, setTab] = useState<'overview' | 'users'>('overview')
+  const [tab, setTab] = useState<'overview' | 'users' | 'feedback'>('overview')
 
   useEffect(() => {
     if (!authLoading) {
@@ -87,15 +88,17 @@ export default function AdminDashboard() {
 
   const fetchAdminData = async () => {
     try {
-      const [statsRes, analysesRes, usersRes] = await Promise.all([
+      const [statsRes, analysesRes, usersRes, feedbackRes] = await Promise.all([
         api.get('/api/admin/stats'),
         api.get('/api/admin/analyses'),
-        api.get('/api/admin/users')
+        api.get('/api/admin/users'),
+        api.get('/api/admin/feedback')
       ])
       
       setStats(statsRes.data)
       setAnalyses(analysesRes.data)
       setUsers(usersRes.data)
+      setFeedbacks(feedbackRes.data)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load admin data')
     } finally {
@@ -137,6 +140,18 @@ export default function AdminDashboard() {
           className={`px-4 py-2 font-medium border-b-2 transition-colors ${tab === 'users' ? 'border-[var(--color-accent-real)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
         >
           User Management
+        </button>
+        <button 
+          onClick={() => setTab('feedback')}
+          className={`px-4 py-2 font-medium border-b-2 transition-colors flex items-center gap-2 ${tab === 'feedback' ? 'border-[var(--color-accent-real)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
+        >
+          <MessageSquare size={16} />
+          Feedback
+          {feedbacks.filter(f => f.status === 'open').length > 0 && (
+            <span className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+              {feedbacks.filter(f => f.status === 'open').length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -264,6 +279,85 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {tab === 'feedback' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <h2 className="text-2xl font-bold mb-6">User Feedback</h2>
+          <div className="glass rounded-[24px] border border-[var(--border-color)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-white/5 text-sm uppercase text-[var(--text-muted)] border-b border-[var(--border-color)]">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">Status</th>
+                    <th className="px-6 py-4 font-medium">Email</th>
+                    <th className="px-6 py-4 font-medium">Type</th>
+                    <th className="px-6 py-4 font-medium">Message</th>
+                    <th className="px-6 py-4 font-medium">Date</th>
+                    <th className="px-6 py-4 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-color)]">
+                  {feedbacks.map((f, i) => (
+                    <tr key={i} className="hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4">
+                        {f.status === 'open' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                            <Circle size={8} fill="currentColor" /> Open
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/20">
+                            <CheckCircle2 size={12} /> Resolved
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium">{f.email}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          f.type === 'bug' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
+                          f.type === 'suggestion' ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20' :
+                          'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                        }`}>
+                          {f.type.charAt(0).toUpperCase() + f.type.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-300 max-w-[300px]">
+                        <p className="line-clamp-2">{f.message}</p>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[var(--text-muted)]">
+                        {new Date(f.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={async () => {
+                            try {
+                              await api.put(`/api/admin/feedback/${f.id}/resolve`)
+                              setFeedbacks(prev => prev.map(fb => 
+                                fb.id === f.id ? { ...fb, status: fb.status === 'open' ? 'resolved' : 'open' } : fb
+                              ))
+                            } catch (err) {
+                              console.error(err)
+                            }
+                          }}
+                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105 active:scale-95 ${
+                            f.status === 'open' 
+                              ? 'bg-green-500/15 text-green-400 hover:bg-green-500/25 border border-green-500/20' 
+                              : 'bg-gray-500/15 text-gray-400 hover:bg-gray-500/25 border border-gray-500/20'
+                          }`}
+                        >
+                          {f.status === 'open' ? 'Resolve' : 'Reopen'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {feedbacks.length === 0 && (
+                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No feedback submitted yet.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

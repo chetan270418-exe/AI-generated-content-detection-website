@@ -5,6 +5,7 @@ import asyncio
 import redis.asyncio as aioredis
 from ..models.user import User
 from ..models.analysis import Analysis
+from ..models.feedback import Feedback
 from ..utils.jwt import get_current_user, verify_token
 from ..config import get_settings
 
@@ -160,3 +161,30 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+@router.get("/feedback")
+async def get_admin_feedback(admin: User = Depends(verify_admin)):
+    feedbacks = await Feedback.find().sort(-Feedback.created_at).limit(100).to_list()
+    results = []
+    for f in feedbacks:
+        results.append({
+            "id": str(f.id),
+            "email": f.email,
+            "type": f.type,
+            "message": f.message,
+            "status": f.status,
+            "created_at": f.created_at
+        })
+    return results
+
+@router.put("/feedback/{feedback_id}/resolve")
+async def resolve_feedback(feedback_id: str, admin: User = Depends(verify_admin)):
+    from bson.objectid import ObjectId
+    feedback = await Feedback.get(ObjectId(feedback_id))
+    if not feedback:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+        
+    feedback.status = "resolved" if feedback.status == "open" else "open"
+    await feedback.save()
+    
+    return {"message": "Feedback status updated", "status": feedback.status}

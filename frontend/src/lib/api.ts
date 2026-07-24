@@ -119,6 +119,10 @@ export const analysisApi = {
   },
 };
 
+export const feedbackApi = {
+  submit: (data: { type: string, message: string }) => api.post('/api/feedback/submit', data).then(res => res.data)
+};
+
 export const subscriptionApi = {
   getStatus: async () => {
     const res = await api.get('/api/subscription/status');
