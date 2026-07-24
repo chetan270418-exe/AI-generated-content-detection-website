@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, Variants } from 'framer-motion'
 import { MessageSquare, Send, CheckCircle2, Loader2, AlertCircle, Bug, Lightbulb, HelpCircle } from 'lucide-react'
 import api from '@/lib/api'
 
@@ -11,7 +11,7 @@ const feedbackTypes = [
   { value: 'general', label: 'General Inquiry', icon: HelpCircle, color: '#00d4ff', bg: 'rgba(0,212,255,0.15)' },
 ]
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -19,7 +19,7 @@ const containerVariants = {
   }
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 16 },
   show: { 
     opacity: 1, y: 0, 
