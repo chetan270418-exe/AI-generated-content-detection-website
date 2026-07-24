@@ -120,7 +120,19 @@ async def get_global_analyses(admin: User = Depends(verify_admin)):
 
 @router.get("/users")
 async def get_global_users(admin: User = Depends(verify_admin)):
-    users = await User.find().sort(-User.created_at).limit(100).to_list()
+    # Only return users who have filed cyber reports
+    reports = await CyberReport.find().to_list()
+    reported_user_ids = {r.user_id for r in reports}
+    
+    if not reported_user_ids:
+        return []
+        
+    from bson.objectid import ObjectId
+    object_ids = [ObjectId(uid) for uid in reported_user_ids if uid]
+    
+    from beanie.odm.operators.find.comparison import In
+    users = await User.find(In(User.id, object_ids)).sort(-User.created_at).to_list()
+    
     results = []
     for u in users:
         results.append({
