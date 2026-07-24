@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
-import { analysisApi } from '@/lib/api'
+import { analysisApi, translateApi } from '@/lib/api'
 import FileUploader from '@/components/ui/FileUploader'
 import HowToUse from '@/components/ui/HowToUse'
 import FAQ from '@/components/ui/FAQ'
-import { Image as ImageIcon, Type, Loader2, Sparkles, Activity, FileText, Video, Layers, Mic, Wand2, Languages } from 'lucide-react'
+import { Image as ImageIcon, Type, Loader2, Sparkles, Activity, FileText, Video, Layers, Mic, Wand2, Languages, X, Copy, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDropzone } from 'react-dropzone'
 
@@ -21,6 +21,47 @@ export default function UploadPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
+
+  // Translator Modal State
+  const [showTranslateModal, setShowTranslateModal] = useState(false)
+  const [targetLanguage, setTargetLanguage] = useState('es')
+  const [translatedText, setTranslatedText] = useState('')
+  const [translateLoading, setTranslateLoading] = useState(false)
+  const [translateError, setTranslateError] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'hi', name: 'Hindi' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'zh-CN', name: 'Chinese (Simplified)' }
+  ]
+
+  const handleTranslate = async () => {
+    if (!text.trim()) return
+    setTranslateError('')
+    setTranslateLoading(true)
+    try {
+      const res = await translateApi.translate({
+        text,
+        target_language: targetLanguage
+      })
+      setTranslatedText(res.translated_text)
+    } catch (err: any) {
+      setTranslateError(err.response?.data?.detail || 'Translation failed')
+    } finally {
+      setTranslateLoading(false)
+    }
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(translatedText)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -360,7 +401,11 @@ export default function UploadPage() {
                 
                 <div className="flex flex-wrap gap-4 mt-4">
                   <button 
-                    onClick={() => alert("AI Translator feature is coming soon! Seamlessly translate content while preserving tone.")}
+                    onClick={() => {
+                      setTranslatedText('')
+                      setTranslateError('')
+                      setShowTranslateModal(true)
+                    }}
                     disabled={!text.trim() || isSubmitting}
                     className="flex-1 min-w-[150px] py-3 rounded-[12px] bg-[var(--color-accent-ai)]/10 text-[var(--color-accent-ai)] border border-[var(--color-accent-ai)]/30 hover:bg-[var(--color-accent-ai)] hover:text-white transition-all flex items-center justify-center gap-2 font-medium disabled:opacity-50"
                   >
@@ -474,6 +519,90 @@ export default function UploadPage() {
       {/* Downside Content */}
       <HowToUse />
       <FAQ />
+
+      {/* Translator Modal */}
+      <AnimatePresence>
+        {showTranslateModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+              className="glass border border-white/10 rounded-[32px] w-full max-w-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative"
+            >
+              <div className="p-8">
+                <button 
+                  onClick={() => setShowTranslateModal(false)}
+                  className="absolute top-6 right-6 text-gray-400 hover:text-white bg-white/5 p-2 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-[var(--color-accent-ai)]/20 border border-[var(--color-accent-ai)]/30 rounded-full flex items-center justify-center text-[var(--color-accent-ai)]">
+                    <Languages size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">AI Translator</h2>
+                    <p className="text-sm text-[var(--text-muted)]">Seamlessly translate your content.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex items-end gap-4">
+                    <div className="flex-grow">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Target Language</label>
+                      <select 
+                        value={targetLanguage}
+                        onChange={e => setTargetLanguage(e.target.value)}
+                        className="w-full bg-black/40 border border-[var(--border-color)] rounded-[12px] px-4 py-3 text-white focus:outline-none focus:border-[var(--color-accent-ai)] transition-colors appearance-none"
+                      >
+                        {languages.map(l => (
+                          <option key={l.code} value={l.code}>{l.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button 
+                      onClick={handleTranslate}
+                      disabled={translateLoading}
+                      className="bg-[var(--color-accent-ai)] hover:bg-purple-600 text-white font-bold py-3 px-8 rounded-[12px] transition-all flex items-center justify-center gap-2 disabled:opacity-50 min-w-[140px]"
+                    >
+                      {translateLoading ? <Loader2 className="animate-spin" size={20} /> : 'Translate'}
+                    </button>
+                  </div>
+
+                  {translateError && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-[12px] text-red-500 text-sm">
+                      {translateError}
+                    </div>
+                  )}
+
+                  <div className="relative group">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Translated Result</label>
+                    <textarea 
+                      readOnly
+                      value={translatedText}
+                      placeholder="Translation will appear here..."
+                      className="w-full h-48 bg-black/40 border border-[var(--border-color)] rounded-[16px] p-5 text-white focus:outline-none focus:border-[var(--color-accent-ai)] transition-colors resize-none text-lg leading-relaxed shadow-inner"
+                    />
+                    
+                    {translatedText && (
+                      <button 
+                        onClick={handleCopy}
+                        className="absolute bottom-4 right-4 bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium backdrop-blur-sm border border-white/10"
+                      >
+                        {copied ? <CheckCircle2 size={16} className="text-green-400" /> : <Copy size={16} />}
+                        {copied ? 'Copied!' : 'Copy text'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </motion.div>
   )

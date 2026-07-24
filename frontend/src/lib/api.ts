@@ -131,6 +131,11 @@ export const cyberReportApi = {
     api.get(`/api/cyber-report/${reportId}/pdf`, { responseType: 'blob' }).then(res => res.data)
 };
 
+export const translateApi = {
+  translate: (data: { text: string, target_language: string }) => 
+    api.post('/api/translate', data).then(res => res.data)
+};
+
 export const subscriptionApi = {
   getStatus: async () => {
     const res = await api.get('/api/subscription/status');
