@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import api from '@/lib/api'
-import { Users, Activity, Loader2, ShieldCheck, FileCheck, Brain, MessageSquare, CheckCircle2, Circle } from 'lucide-react'
+import { Users, Activity, Loader2, ShieldCheck, FileCheck, Brain, MessageSquare, CheckCircle2, Circle, ShieldAlert, Download } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { cyberReportApi } from '@/lib/api'
 
 export default function AdminDashboard() {
   const { isAuthenticated, user, loading: authLoading } = useAuth() as any
@@ -15,9 +16,10 @@ export default function AdminDashboard() {
   const [analyses, setAnalyses] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [feedbacks, setFeedbacks] = useState<any[]>([])
+  const [cyberReports, setCyberReports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [tab, setTab] = useState<'overview' | 'users' | 'feedback'>('overview')
+  const [tab, setTab] = useState<'overview' | 'users' | 'feedback' | 'cyber'>('overview')
 
   useEffect(() => {
     if (!authLoading) {
@@ -88,17 +90,19 @@ export default function AdminDashboard() {
 
   const fetchAdminData = async () => {
     try {
-      const [statsRes, analysesRes, usersRes, feedbackRes] = await Promise.all([
+      const [statsRes, analysesRes, usersRes, feedbackRes, cyberRes] = await Promise.all([
         api.get('/api/admin/stats'),
         api.get('/api/admin/analyses'),
         api.get('/api/admin/users'),
-        api.get('/api/admin/feedback')
+        api.get('/api/admin/feedback'),
+        api.get('/api/admin/cyber-reports')
       ])
       
       setStats(statsRes.data)
       setAnalyses(analysesRes.data)
       setUsers(usersRes.data)
       setFeedbacks(feedbackRes.data)
+      setCyberReports(cyberRes.data)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load admin data')
     } finally {
@@ -150,6 +154,18 @@ export default function AdminDashboard() {
           {feedbacks.filter(f => f.status === 'open').length > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
               {feedbacks.filter(f => f.status === 'open').length}
+            </span>
+          )}
+        </button>
+        <button 
+          onClick={() => setTab('cyber')}
+          className={`px-4 py-2 font-medium border-b-2 transition-colors flex items-center gap-2 ${tab === 'cyber' ? 'border-[var(--color-accent-real)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
+        >
+          <ShieldAlert size={16} />
+          Cyber Reports
+          {cyberReports.filter(r => r.status === 'filed').length > 0 && (
+            <span className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+              {cyberReports.filter(r => r.status === 'filed').length}
             </span>
           )}
         </button>
@@ -357,6 +373,82 @@ export default function AdminDashboard() {
                   ))}
                   {feedbacks.length === 0 && (
                     <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No feedback submitted yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {tab === 'cyber' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <h2 className="text-2xl font-bold mb-6 text-red-400 flex items-center gap-2">
+            <ShieldAlert size={28} /> Cyber Crime Reports
+          </h2>
+          <div className="glass rounded-[24px] border border-red-500/20 overflow-hidden shadow-[0_0_30px_rgba(239,68,68,0.1)]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-red-500/10 text-sm uppercase text-red-400 border-b border-red-500/20">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">Status</th>
+                    <th className="px-6 py-4 font-medium">User Email</th>
+                    <th className="px-6 py-4 font-medium">Platform</th>
+                    <th className="px-6 py-4 font-medium">Category</th>
+                    <th className="px-6 py-4 font-medium">Date Filed</th>
+                    <th className="px-6 py-4 font-medium">Evidence</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-color)]">
+                  {cyberReports.map((r, i) => (
+                    <tr key={i} className="hover:bg-red-500/5 transition-colors">
+                      <td className="px-6 py-4">
+                        {r.status === 'filed' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                            <Circle size={8} fill="currentColor" /> Filed
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/20">
+                            <CheckCircle2 size={12} /> Action Taken
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium">{r.user_email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-300">{r.platform}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/20">
+                          {r.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[var(--text-muted)]">
+                        {new Date(r.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const blob = await cyberReportApi.downloadPdf(r.id)
+                              const url = window.URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `official_evidence_${r.id}.pdf`
+                              document.body.appendChild(a)
+                              a.click()
+                              window.URL.revokeObjectURL(url)
+                              document.body.removeChild(a)
+                            } catch (err) {
+                              console.error(err)
+                            }
+                          }}
+                          className="px-4 py-1.5 rounded-full text-xs font-bold bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 border border-blue-500/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                        >
+                          <Download size={14} /> PDF
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {cyberReports.length === 0 && (
+                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No cyber reports filed yet.</td></tr>
                   )}
                 </tbody>
               </table>

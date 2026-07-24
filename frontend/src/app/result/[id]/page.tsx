@@ -8,9 +8,10 @@ import { Analysis } from '@/lib/types'
 import VerdictCard from '@/components/ui/VerdictCard'
 import ConfidenceGauge from '@/components/ui/ConfidenceGauge'
 import ScoreChart from '@/components/charts/ScoreChart'
-import { ArrowLeft, Loader2, RefreshCw, Download } from 'lucide-react'
+import { ArrowLeft, Loader2, RefreshCw, Download, AlertTriangle, X, ShieldAlert } from 'lucide-react'
 import Link from 'next/link'
-import { motion, Variants } from 'framer-motion'
+import { motion, Variants, AnimatePresence } from 'framer-motion'
+import { cyberReportApi } from '@/lib/api'
 
 const container: Variants = {
   hidden: {
@@ -49,6 +50,15 @@ export default function ResultPage() {
   const [result, setResult] = useState<Analysis | null>(null)
   const [error, setError] = useState('')
   const [isPolling, setIsPolling] = useState(true)
+
+  // Cyber Report Modal State
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportPlatform, setReportPlatform] = useState('')
+  const [reportCategory, setReportCategory] = useState('Deepfake')
+  const [reportDescription, setReportDescription] = useState('')
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportSuccess, setReportSuccess] = useState(false)
+  const [reportId, setReportId] = useState('')
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -179,6 +189,43 @@ export default function ResultPage() {
     }
   }
 
+  const handleFileReport = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!reportPlatform || !reportDescription) return
+    setReportLoading(true)
+    try {
+      const res = await cyberReportApi.fileReport({
+        analysis_id: id,
+        platform: reportPlatform,
+        category: reportCategory,
+        description: reportDescription
+      })
+      setReportId(res.report_id)
+      setReportSuccess(true)
+    } catch (err) {
+      console.error(err)
+      alert("Failed to file report")
+    } finally {
+      setReportLoading(false)
+    }
+  }
+
+  const handleDownloadEvidence = async () => {
+    try {
+      const blob = await cyberReportApi.downloadPdf(reportId)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `cyber_evidence_${reportId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   return (
     <div className="flex-grow max-w-5xl mx-auto w-full px-4 py-8 relative">
       <div 
@@ -198,13 +245,21 @@ export default function ResultPage() {
             <span className="font-medium">Analyze Another</span>
           </Link>
           <div className="flex items-center gap-4">
+            {result.verdict === 'ai_generated' && (
+              <button 
+                onClick={() => setShowReportModal(true)}
+                className="text-sm font-bold text-red-500 bg-red-500/10 border border-red-500/30 px-4 py-1.5 rounded-full hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+              >
+                <ShieldAlert size={14} /> Report Cyber Crime
+              </button>
+            )}
             <button 
               onClick={handleDownloadReport}
               className="text-sm font-medium text-[var(--color-accent-real)] bg-[var(--color-accent-real)]/10 px-4 py-1.5 rounded-full hover:bg-[var(--color-accent-real)]/20 transition-colors flex items-center gap-2"
             >
               <Download size={14} /> Download PDF
             </button>
-            <div className="text-sm font-mono text-[var(--text-muted)] bg-white/5 px-3 py-1 rounded-full border border-white/10">
+            <div className="text-sm font-mono text-[var(--text-muted)] bg-white/5 px-3 py-1 rounded-full border border-white/10 hidden md:block">
               {new Date(result.created_at).toLocaleString()}
             </div>
           </div>
@@ -308,6 +363,112 @@ export default function ResultPage() {
           </p>
         </motion.div>
       </motion.div>
+
+      <AnimatePresence>
+        {showReportModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+              className="glass border border-red-500/30 rounded-[32px] w-full max-w-xl overflow-hidden shadow-[0_0_50px_rgba(239,68,68,0.2)] relative"
+            >
+              <div className="p-8">
+                <button 
+                  onClick={() => setShowReportModal(false)}
+                  className="absolute top-6 right-6 text-gray-400 hover:text-white bg-white/5 p-2 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-red-500/20 border border-red-500/30 rounded-full flex items-center justify-center text-red-500">
+                    <ShieldAlert size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Report Cyber Crime</h2>
+                    <p className="text-sm text-[var(--text-muted)]">File an official forensic evidence report.</p>
+                  </div>
+                </div>
+
+                {reportSuccess ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <ShieldAlert className="w-8 h-8 text-green-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-green-400 mb-2">Report Filed Successfully</h3>
+                    <p className="text-gray-300 mb-8 text-sm">Your report has been logged with cryptographic integrity. You can now download the official forensic PDF to submit to authorities (e.g. cybercrime.gov.in).</p>
+                    <button 
+                      onClick={handleDownloadEvidence}
+                      className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all flex items-center justify-center gap-2 mx-auto"
+                    >
+                      <Download size={18} /> Download Forensic Evidence
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleFileReport} className="space-y-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Platform Found On</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. WhatsApp, Twitter" 
+                          value={reportPlatform}
+                          onChange={e => setReportPlatform(e.target.value)}
+                          className="w-full bg-black/40 border border-[var(--border-color)] rounded-[12px] px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+                        <select 
+                          value={reportCategory}
+                          onChange={e => setReportCategory(e.target.value)}
+                          className="w-full bg-black/40 border border-[var(--border-color)] rounded-[12px] px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors appearance-none"
+                        >
+                          <option>Deepfake</option>
+                          <option>Misinformation</option>
+                          <option>Fraud / Scam</option>
+                          <option>Defamation</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Incident Description</label>
+                      <textarea 
+                        rows={4}
+                        placeholder="Describe how this AI-generated content is being misused..."
+                        value={reportDescription}
+                        onChange={e => setReportDescription(e.target.value)}
+                        className="w-full bg-black/40 border border-[var(--border-color)] rounded-[12px] px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors resize-none"
+                        required
+                      />
+                    </div>
+
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-[12px] flex gap-3 text-red-400">
+                      <AlertTriangle size={20} className="flex-shrink-0 mt-0.5" />
+                      <p className="text-xs">
+                        Submitting this form will generate a legally-oriented forensic report tied to your account. This should only be used for reporting genuine malicious activities.
+                      </p>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      disabled={reportLoading}
+                      className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-[12px] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {reportLoading ? <Loader2 className="animate-spin" size={20} /> : <ShieldAlert size={20} />}
+                      {reportLoading ? 'Generating Evidence...' : 'Submit & Generate Evidence'}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

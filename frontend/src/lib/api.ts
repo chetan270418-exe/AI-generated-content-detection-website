@@ -123,6 +123,14 @@ export const feedbackApi = {
   submit: (data: { type: string, message: string }) => api.post('/api/feedback/submit', data).then(res => res.data)
 };
 
+export const cyberReportApi = {
+  fileReport: (data: { analysis_id: string, platform: string, category: string, description: string }) => 
+    api.post('/api/cyber-report/file', data).then(res => res.data),
+  
+  downloadPdf: (reportId: string) => 
+    api.get(`/api/cyber-report/${reportId}/pdf`, { responseType: 'blob' }).then(res => res.data)
+};
+
 export const subscriptionApi = {
   getStatus: async () => {
     const res = await api.get('/api/subscription/status');

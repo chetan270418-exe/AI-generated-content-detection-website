@@ -6,6 +6,7 @@ import redis.asyncio as aioredis
 from ..models.user import User
 from ..models.analysis import Analysis
 from ..models.feedback import Feedback
+from ..models.cyber_report import CyberReport
 from ..utils.jwt import get_current_user, verify_token
 from ..config import get_settings
 
@@ -188,3 +189,24 @@ async def resolve_feedback(feedback_id: str, admin: User = Depends(verify_admin)
     await feedback.save()
     
     return {"message": "Feedback status updated", "status": feedback.status}
+
+@router.get("/cyber-reports")
+async def get_admin_cyber_reports(admin: User = Depends(verify_admin)):
+    reports = await CyberReport.find().sort(-CyberReport.created_at).limit(100).to_list()
+    results = []
+    
+    for r in reports:
+        # fetch user email
+        from bson.objectid import ObjectId
+        user = await User.get(ObjectId(r.user_id))
+        email = user.email if user else "Unknown User"
+        
+        results.append({
+            "id": str(r.id),
+            "user_email": email,
+            "platform": r.platform,
+            "category": r.category,
+            "status": r.status,
+            "created_at": r.created_at
+        })
+    return results

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .config import get_settings
 from .database import init_db
-from .routers import auth, analyze, results, subscription, admin, feedback
+from .routers import auth, analyze, results, subscription, admin, feedback, cyber_report
 
 settings = get_settings()
 
@@ -46,6 +46,7 @@ app.include_router(results.router, prefix="/api", tags=["results"])
 app.include_router(subscription.router, prefix="/api/subscription", tags=["subscription"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
+app.include_router(cyber_report.router, prefix="/api/cyber-report", tags=["cyber_report"])
 
 @app.get("/health")
 async def health_check():
