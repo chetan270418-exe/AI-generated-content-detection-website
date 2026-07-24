@@ -387,8 +387,8 @@ export default function ResultPage() {
                     <ShieldAlert size={24} />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">Report Cyber Crime</h2>
-                    <p className="text-sm text-[var(--text-muted)]">File an official forensic evidence report.</p>
+                    <h2 className="text-2xl font-bold">Document Incident</h2>
+                    <p className="text-sm text-[var(--text-muted)]">Document this incident to support your official complaint.</p>
                   </div>
                 </div>
 
@@ -397,13 +397,13 @@ export default function ResultPage() {
                     <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                       <ShieldAlert className="w-8 h-8 text-green-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-green-400 mb-2">Report Filed Successfully</h3>
-                    <p className="text-gray-300 mb-8 text-sm">Your report has been logged with cryptographic integrity. You can now download the official forensic PDF to submit to authorities (e.g. cybercrime.gov.in).</p>
+                    <h3 className="text-xl font-bold text-green-400 mb-2">Incident Logged</h3>
+                    <p className="text-gray-300 mb-8 text-sm">Your report has been logged. Download this analysis summary to include when filing your report at cybercrime.gov.in.</p>
                     <button 
                       onClick={handleDownloadEvidence}
                       className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all flex items-center justify-center gap-2 mx-auto"
                     >
-                      <Download size={18} /> Download Forensic Evidence
+                      <Download size={18} /> Download Analysis Summary
                     </button>
                   </div>
                 ) : (
@@ -450,7 +450,7 @@ export default function ResultPage() {
                     <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-[12px] flex gap-3 text-red-400">
                       <AlertTriangle size={20} className="flex-shrink-0 mt-0.5" />
                       <p className="text-xs">
-                        Submitting this form will generate a legally-oriented forensic report tied to your account. This should only be used for reporting genuine malicious activities.
+                        Submitting this form will log the incident and generate an analysis summary to support your complaint. This is not an official legal filing by itself.
                       </p>
                     </div>
 
@@ -460,7 +460,7 @@ export default function ResultPage() {
                       className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-[12px] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {reportLoading ? <Loader2 className="animate-spin" size={20} /> : <ShieldAlert size={20} />}
-                      {reportLoading ? 'Generating Evidence...' : 'Submit & Generate Evidence'}
+                      {reportLoading ? 'Generating Summary...' : 'Submit & Generate Summary'}
                     </button>
                   </form>
                 )}
