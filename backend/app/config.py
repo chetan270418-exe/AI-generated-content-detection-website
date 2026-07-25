@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     mongodb_db_name: str = "dictator"
     redis_url: str = "redis://localhost:6379/0"
     
-    jwt_secret: str = "supersecretkey"
+    jwt_secret: str
     jwt_algorithm: str = "HS256"
     jwt_expiry_hours: int = 24
     

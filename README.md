@@ -54,8 +54,8 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/AI-image-detection.git
-cd AI-image-detection
+git clone https://github.com/chetan270418-exe/AI-generated-content-detection-website.git
+cd AI-generated-content-detection-website
 ```
 
 ### 2. Set Up Environment Variables
