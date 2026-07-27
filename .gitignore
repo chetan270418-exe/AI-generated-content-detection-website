@@ -62,5 +62,6 @@ Thumbs.db
 *.bak
 *.swp
 debug_*.py
-fetch_*.pystitch/  
-" have you do "this.md  
+fetch_*.py
+stitch/
+have you do this.md
