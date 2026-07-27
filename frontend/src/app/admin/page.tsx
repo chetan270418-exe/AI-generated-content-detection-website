@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import api from '@/lib/api'
-import { Users, Activity, Loader2, ShieldCheck, FileCheck, Brain, MessageSquare, CheckCircle2, Circle, ShieldAlert, Download } from 'lucide-react'
+import { Users, Activity, Loader2, ShieldCheck, FileCheck, Brain, MessageSquare, CheckCircle2, Circle, ShieldAlert, Download, Crown } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cyberReportApi } from '@/lib/api'
 
@@ -46,7 +46,6 @@ export default function AdminDashboard() {
       try {
         const payload = JSON.parse(event.data);
         if (payload.event === 'analysis_completed') {
-          // Update stats dynamically
           setStats((prev: any) => {
             if (!prev) return prev;
             return {
@@ -57,7 +56,6 @@ export default function AdminDashboard() {
             };
           });
           
-          // Prepend to analyses list
           setAnalyses((prev) => {
             const newAnalysis = {
               id: payload.data.id,
@@ -112,59 +110,73 @@ export default function AdminDashboard() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex-grow flex justify-center items-center h-[60vh]">
-        <Loader2 className="animate-spin w-8 h-8 text-[var(--color-accent-real)]" />
+      <div className="flex-grow flex justify-center items-center h-[70vh]">
+        <Loader2 className="animate-spin w-10 h-10 text-[#00d4ff]" />
       </div>
     )
   }
 
   if (error) {
-    return <div className="text-red-500 text-center mt-20">{error}</div>
+    return <div className="text-red-500 text-center mt-24">{error}</div>
   }
 
   return (
-    <div className="flex-grow max-w-7xl mx-auto w-full px-4 py-12">
-      <div className="flex items-center gap-3 mb-8">
-        <ShieldCheck className="w-10 h-10 text-[var(--color-accent-real)]" />
-        <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-          Admin Dashboard
-        </h1>
+    <div className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 pt-24">
+      {/* Header matching Stitch redesign */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00d4ff] to-[#8b5cf6] p-[2px] shadow-[0_0_20px_rgba(0,212,255,0.4)]">
+          <div className="w-full h-full bg-[#0e1424] rounded-[14px] flex items-center justify-center text-[#00d4ff]">
+            <ShieldCheck size={26} />
+          </div>
+        </div>
+        <div>
+          <h1 className="text-4xl font-black text-white">Admin Dashboard</h1>
+          <p className="text-xs text-gray-400">Live platform telemetry & telemetry management</p>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-4 mb-8 border-b border-[var(--border-color)]">
+      {/* Navigation Tabs matching Stitch */}
+      <div className="flex gap-2 mb-8 border-b border-white/10 pb-4 overflow-x-auto">
         <button 
           onClick={() => setTab('overview')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${tab === 'overview' ? 'border-[var(--color-accent-real)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
+          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            tab === 'overview' ? 'bg-[#00d4ff]/15 text-[#00d4ff] border border-[#00d4ff]/40 shadow-[0_0_15px_rgba(0,212,255,0.2)]' : 'text-gray-400 hover:text-white'
+          }`}
         >
           Overview & Activity
         </button>
         <button 
           onClick={() => setTab('users')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${tab === 'users' ? 'border-[var(--color-accent-real)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
+          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            tab === 'users' ? 'bg-[#00d4ff]/15 text-[#00d4ff] border border-[#00d4ff]/40 shadow-[0_0_15px_rgba(0,212,255,0.2)]' : 'text-gray-400 hover:text-white'
+          }`}
         >
           User Management
         </button>
         <button 
           onClick={() => setTab('feedback')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors flex items-center gap-2 ${tab === 'feedback' ? 'border-[var(--color-accent-real)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
+          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+            tab === 'feedback' ? 'bg-[#00d4ff]/15 text-[#00d4ff] border border-[#00d4ff]/40 shadow-[0_0_15px_rgba(0,212,255,0.2)]' : 'text-gray-400 hover:text-white'
+          }`}
         >
           <MessageSquare size={16} />
           Feedback
           {feedbacks.filter(f => f.status === 'open').length > 0 && (
-            <span className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               {feedbacks.filter(f => f.status === 'open').length}
             </span>
           )}
         </button>
         <button 
           onClick={() => setTab('cyber')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors flex items-center gap-2 ${tab === 'cyber' ? 'border-[var(--color-accent-real)] text-white' : 'border-transparent text-gray-400 hover:text-white'}`}
+          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+            tab === 'cyber' ? 'bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_15px_rgba(239,68,68,0.25)]' : 'text-gray-400 hover:text-white'
+          }`}
         >
           <ShieldAlert size={16} />
           Cyber Reports
           {cyberReports.filter(r => r.status === 'filed').length > 0 && (
-            <span className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               {cyberReports.filter(r => r.status === 'filed').length}
             </span>
           )}
@@ -172,125 +184,156 @@ export default function AdminDashboard() {
       </div>
 
       {tab === 'overview' && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            <div className="glass p-6 rounded-[20px] border border-white/10 shadow-lg relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+          {/* 4 Stat KPI Cards matching Stitch advanced_admin_analytics_view */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Card 1: Total Users */}
+            <div className="glass p-6 rounded-[28px] border border-[#00d4ff]/30 shadow-[0_0_25px_rgba(0,212,255,0.15)] relative overflow-hidden group">
               <div className="flex justify-between items-start mb-4">
-                <p className="text-gray-400 font-medium">Total Users</p>
-                <Users className="text-blue-400" size={20} />
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Users</p>
+                  <p className="text-3xl font-black text-white mt-1">{stats?.total_users || 0}</p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-[#00d4ff]/15 border border-[#00d4ff]/30 flex items-center justify-center text-[#00d4ff] shadow-[0_0_15px_rgba(0,212,255,0.3)]">
+                  <Users size={24} />
+                </div>
               </div>
-              <p className="text-3xl font-bold">{stats?.total_users}</p>
+              <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden border border-white/10 mt-4">
+                <div className="bg-[#00d4ff] h-full rounded-full w-[85%] shadow-[0_0_10px_#00d4ff]" />
+              </div>
+              <p className="text-[11px] text-[#00d4ff] mt-2 font-medium">85% Active Rate</p>
             </div>
-            
-            <div className="glass p-6 rounded-[20px] border border-[var(--color-accent-real)]/30 shadow-lg relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-accent-real)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+            {/* Card 2: VIP Users */}
+            <div className="glass p-6 rounded-[28px] border border-[#c084fc]/30 shadow-[0_0_25px_rgba(192,132,252,0.15)] relative overflow-hidden group">
               <div className="flex justify-between items-start mb-4">
-                <p className="text-gray-400 font-medium">VIP Users</p>
-                <Activity className="text-[var(--color-accent-real)]" size={20} />
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">VIP Users</p>
+                  <p className="text-3xl font-black text-white mt-1">{stats?.vip_users || 0}</p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-[#c084fc]/15 border border-[#c084fc]/30 flex items-center justify-center text-[#c084fc] shadow-[0_0_15px_rgba(192,132,252,0.3)]">
+                  <Crown size={24} />
+                </div>
               </div>
-              <p className="text-3xl font-bold">{stats?.vip_users}</p>
+              <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden border border-white/10 mt-4">
+                <div className="bg-[#c084fc] h-full rounded-full w-[45%]" />
+              </div>
+              <p className="text-[11px] text-[#c084fc] mt-2 font-medium">14% Growth</p>
             </div>
-            
-            <div className="glass p-6 rounded-[20px] border border-white/10 shadow-lg relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+            {/* Card 3: Total Analyses */}
+            <div className="glass p-6 rounded-[28px] border border-[#10b981]/30 shadow-[0_0_25px_rgba(16,185,129,0.15)] relative overflow-hidden group">
               <div className="flex justify-between items-start mb-4">
-                <p className="text-gray-400 font-medium">Total Analyses</p>
-                <FileCheck className="text-green-400" size={20} />
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Analyses</p>
+                  <p className="text-3xl font-black text-white mt-1">{stats?.total_analyses || 0}</p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center text-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                  <FileCheck size={24} />
+                </div>
               </div>
-              <p className="text-3xl font-bold">{stats?.total_analyses}</p>
+              <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden border border-white/10 mt-4">
+                <div className="bg-[#10b981] h-full rounded-full w-[65%]" />
+              </div>
+              <p className="text-[11px] text-[#10b981] mt-2 font-medium">5% Increase</p>
             </div>
-            
-            <div className="glass p-6 rounded-[20px] border border-[var(--color-accent-ai)]/30 shadow-lg relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-accent-ai)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+            {/* Card 4: AI Detected */}
+            <div className="glass p-6 rounded-[28px] border border-[#ff3dff]/30 shadow-[0_0_25px_rgba(255,61,255,0.15)] relative overflow-hidden group">
               <div className="flex justify-between items-start mb-4">
-                <p className="text-gray-400 font-medium">AI Detected</p>
-                <Brain className="text-[var(--color-accent-ai)]" size={20} />
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">AI Detected</p>
+                  <p className="text-3xl font-black text-white mt-1">{stats?.ai_count || 0}</p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-[#ff3dff]/15 border border-[#ff3dff]/30 flex items-center justify-center text-[#ff3dff] shadow-[0_0_15px_rgba(255,61,255,0.3)]">
+                  <Brain size={24} />
+                </div>
               </div>
-              <p className="text-3xl font-bold">{stats?.ai_count}</p>
+              <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden border border-white/10 mt-4">
+                <div className="bg-[#ff3dff] h-full rounded-full w-[37%]" />
+              </div>
+              <p className="text-[11px] text-[#ff3dff] mt-2 font-medium">37% AI Rate</p>
             </div>
           </div>
 
-          {/* Activity Feed */}
-          <h2 className="text-2xl font-bold mb-6">Global Activity Feed</h2>
-          <div className="glass rounded-[24px] border border-[var(--border-color)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-white/5 text-sm uppercase text-[var(--text-muted)] border-b border-[var(--border-color)]">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">File</th>
-                    <th className="px-6 py-4 font-medium">Type</th>
-                    <th className="px-6 py-4 font-medium">Verdict</th>
-                    <th className="px-6 py-4 font-medium">Confidence</th>
-                    <th className="px-6 py-4 font-medium">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border-color)]">
-                  {analyses.map((a, i) => (
-                    <tr key={i} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 text-sm max-w-[200px] truncate">{a.filename}</td>
-                      <td className="px-6 py-4 text-sm capitalize">{a.file_type}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          a.verdict === 'ai_generated' ? 'bg-[var(--color-accent-ai)]/20 text-[var(--color-accent-ai)]' :
-                          a.verdict === 'human_made' ? 'bg-[var(--color-accent-real)]/20 text-[var(--color-accent-real)]' :
-                          'bg-gray-500/20 text-gray-300'
-                        }`}>
-                          {a.verdict ? a.verdict.replace('_', ' ').toUpperCase() : a.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-mono">
-                        {a.confidence_score ? `${(a.confidence_score * 100).toFixed(1)}%` : '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[var(--text-muted)]">
-                        {new Date(a.created_at).toLocaleString()}
-                      </td>
+          {/* Activity Feed matching Stitch */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white">Global Activity Feed</h2>
+            <div className="glass rounded-[28px] border border-white/10 overflow-hidden shadow-2xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-black/50 text-xs font-bold uppercase text-gray-400 border-b border-white/10">
+                    <tr>
+                      <th className="px-6 py-4">File</th>
+                      <th className="px-6 py-4">Type</th>
+                      <th className="px-6 py-4">Verdict</th>
+                      <th className="px-6 py-4">Confidence</th>
+                      <th className="px-6 py-4">Date</th>
                     </tr>
-                  ))}
-                  {analyses.length === 0 && (
-                    <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No recent activity.</td></tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-sm">
+                    {analyses.map((a, i) => (
+                      <tr key={i} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-medium text-white max-w-[220px] truncate">{a.filename}</td>
+                        <td className="px-6 py-4 capitalize text-gray-300">{a.file_type}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-extrabold tracking-wider ${
+                            a.verdict === 'ai_generated' ? 'bg-[#ff3dff]/20 text-[#ff3dff] border border-[#ff3dff]/40 shadow-[0_0_10px_rgba(255,61,255,0.3)]' :
+                            a.verdict === 'human_made' ? 'bg-[#00d4ff]/20 text-[#00d4ff] border border-[#00d4ff]/40 shadow-[0_0_10px_rgba(0,212,255,0.3)]' :
+                            'bg-gray-500/20 text-gray-300'
+                          }`}>
+                            {a.verdict ? a.verdict.replace('_', ' ').toUpperCase() : a.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-gray-200">
+                          {a.confidence_score ? `${(a.confidence_score * 100).toFixed(1)}%` : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-xs text-gray-400">
+                          {new Date(a.created_at).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </motion.div>
       )}
 
       {tab === 'users' && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <h2 className="text-2xl font-bold mb-6">User Management</h2>
-          <div className="glass rounded-[24px] border border-[var(--border-color)] overflow-hidden">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <h2 className="text-xl font-bold text-white">User Management</h2>
+          <div className="glass rounded-[28px] border border-white/10 overflow-hidden shadow-2xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-white/5 text-sm uppercase text-[var(--text-muted)] border-b border-[var(--border-color)]">
+                <thead className="bg-black/50 text-xs font-bold uppercase text-gray-400 border-b border-white/10">
                   <tr>
-                    <th className="px-6 py-4 font-medium">Email</th>
-                    <th className="px-6 py-4 font-medium">Role</th>
-                    <th className="px-6 py-4 font-medium">Plan</th>
-                    <th className="px-6 py-4 font-medium">Analyses</th>
-                    <th className="px-6 py-4 font-medium">Joined</th>
+                    <th className="px-6 py-4">Email</th>
+                    <th className="px-6 py-4">Role</th>
+                    <th className="px-6 py-4">Plan</th>
+                    <th className="px-6 py-4">Analyses</th>
+                    <th className="px-6 py-4">Joined</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--border-color)]">
+                <tbody className="divide-y divide-white/5 text-sm">
                   {users.map((u, i) => (
                     <tr key={i} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium">{u.email}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-2 py-1 rounded border text-xs font-medium ${u.role === 'admin' ? 'border-red-500/50 text-red-400 bg-red-500/10' : 'border-gray-500/50 text-gray-400'}`}>
+                      <td className="px-6 py-4 font-medium text-white">{u.email}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${u.role === 'admin' ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'bg-gray-500/20 text-gray-400'}`}>
                           {u.role.toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          u.plan === 'vip' ? 'bg-[var(--color-accent-real)]/20 text-[var(--color-accent-real)] border border-[var(--color-accent-real)]/30' : 'bg-gray-500/20 text-gray-300'
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          u.plan === 'vip' ? 'bg-[#00d4ff]/20 text-[#00d4ff] border border-[#00d4ff]/40 shadow-[0_0_10px_rgba(0,212,255,0.3)]' : 'bg-gray-500/20 text-gray-300'
                         }`}>
                           {u.plan.replace('_', ' ').toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm font-mono">{u.analyses_count}</td>
-                      <td className="px-6 py-4 text-sm text-[var(--text-muted)]">
+                      <td className="px-6 py-4 font-mono text-gray-200">{u.analyses_count}</td>
+                      <td className="px-6 py-4 text-xs text-gray-400">
                         {new Date(u.created_at).toLocaleDateString()}
                       </td>
                     </tr>
@@ -303,49 +346,45 @@ export default function AdminDashboard() {
       )}
 
       {tab === 'feedback' && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <h2 className="text-2xl font-bold mb-6">User Feedback</h2>
-          <div className="glass rounded-[24px] border border-[var(--border-color)] overflow-hidden">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <h2 className="text-xl font-bold text-white">User Feedback</h2>
+          <div className="glass rounded-[28px] border border-white/10 overflow-hidden shadow-2xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-white/5 text-sm uppercase text-[var(--text-muted)] border-b border-[var(--border-color)]">
+                <thead className="bg-black/50 text-xs font-bold uppercase text-gray-400 border-b border-white/10">
                   <tr>
-                    <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium">Email</th>
-                    <th className="px-6 py-4 font-medium">Type</th>
-                    <th className="px-6 py-4 font-medium">Message</th>
-                    <th className="px-6 py-4 font-medium">Date</th>
-                    <th className="px-6 py-4 font-medium">Action</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Email</th>
+                    <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Message</th>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--border-color)]">
+                <tbody className="divide-y divide-white/5 text-sm">
                   {feedbacks.map((f, i) => (
                     <tr key={i} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4">
                         {f.status === 'open' ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
                             <Circle size={8} fill="currentColor" /> Open
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/20">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
                             <CheckCircle2 size={12} /> Resolved
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium">{f.email}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          f.type === 'bug' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
-                          f.type === 'suggestion' ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20' :
-                          'bg-blue-500/15 text-blue-400 border border-blue-500/20'
-                        }`}>
-                          {f.type.charAt(0).toUpperCase() + f.type.slice(1)}
+                      <td className="px-6 py-4 font-medium text-white">{f.email}</td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/40">
+                          {f.type}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-300 max-w-[300px]">
+                      <td className="px-6 py-4 text-xs text-gray-300 max-w-[280px]">
                         <p className="line-clamp-2">{f.message}</p>
                       </td>
-                      <td className="px-6 py-4 text-sm text-[var(--text-muted)]">
+                      <td className="px-6 py-4 text-xs text-gray-400">
                         {new Date(f.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">
@@ -360,10 +399,10 @@ export default function AdminDashboard() {
                               console.error(err)
                             }
                           }}
-                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105 active:scale-95 ${
+                          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                             f.status === 'open' 
-                              ? 'bg-green-500/15 text-green-400 hover:bg-green-500/25 border border-green-500/20' 
-                              : 'bg-gray-500/15 text-gray-400 hover:bg-gray-500/25 border border-gray-500/20'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30' 
+                              : 'bg-gray-500/20 text-gray-400 border border-gray-500/40'
                           }`}
                         >
                           {f.status === 'open' ? 'Resolve' : 'Reopen'}
@@ -371,9 +410,6 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
-                  {feedbacks.length === 0 && (
-                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No feedback submitted yet.</td></tr>
-                  )}
                 </tbody>
               </table>
             </div>
@@ -382,45 +418,39 @@ export default function AdminDashboard() {
       )}
 
       {tab === 'cyber' && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <h2 className="text-2xl font-bold mb-6 text-red-400 flex items-center gap-2">
-            <ShieldAlert size={28} /> Cyber Crime Reports
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <h2 className="text-xl font-bold text-red-400 flex items-center gap-2">
+            <ShieldAlert size={24} /> Cyber Crime Reports
           </h2>
-          <div className="glass rounded-[24px] border border-red-500/20 overflow-hidden shadow-[0_0_30px_rgba(239,68,68,0.1)]">
+          <div className="glass rounded-[28px] border border-red-500/30 overflow-hidden shadow-2xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-red-500/10 text-sm uppercase text-red-400 border-b border-red-500/20">
+                <thead className="bg-red-500/10 text-xs font-bold uppercase text-red-400 border-b border-red-500/20">
                   <tr>
-                    <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium">User Email</th>
-                    <th className="px-6 py-4 font-medium">Platform</th>
-                    <th className="px-6 py-4 font-medium">Category</th>
-                    <th className="px-6 py-4 font-medium">Date Filed</th>
-                    <th className="px-6 py-4 font-medium">Evidence</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">User Email</th>
+                    <th className="px-6 py-4">Platform</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4">Date Filed</th>
+                    <th className="px-6 py-4">Evidence</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--border-color)]">
+                <tbody className="divide-y divide-white/5 text-sm">
                   {cyberReports.map((r, i) => (
                     <tr key={i} className="hover:bg-red-500/5 transition-colors">
                       <td className="px-6 py-4">
-                        {r.status === 'filed' ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                            <Circle size={8} fill="currentColor" /> Filed
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/20">
-                            <CheckCircle2 size={12} /> Action Taken
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                          <Circle size={8} fill="currentColor" /> Filed
+                        </span>
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium">{r.user_email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-300">{r.platform}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/20">
+                      <td className="px-6 py-4 font-medium text-white">{r.user_email}</td>
+                      <td className="px-6 py-4 text-gray-300">{r.platform}</td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/40">
                           {r.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-[var(--text-muted)]">
+                      <td className="px-6 py-4 text-xs text-gray-400">
                         {new Date(r.created_at).toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
@@ -431,7 +461,7 @@ export default function AdminDashboard() {
                               const url = window.URL.createObjectURL(blob)
                               const a = document.createElement('a')
                               a.href = url
-                              a.download = `official_evidence_${r.id}.pdf`
+                              a.download = `evidence_${r.id}.pdf`
                               document.body.appendChild(a)
                               a.click()
                               window.URL.revokeObjectURL(url)
@@ -440,16 +470,13 @@ export default function AdminDashboard() {
                               console.error(err)
                             }
                           }}
-                          className="px-4 py-1.5 rounded-full text-xs font-bold bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 border border-blue-500/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                          className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#00d4ff]/20 text-[#00d4ff] border border-[#00d4ff]/40 hover:bg-[#00d4ff]/30 transition-all flex items-center gap-2"
                         >
                           <Download size={14} /> PDF
                         </button>
                       </td>
                     </tr>
                   ))}
-                  {cyberReports.length === 0 && (
-                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No cyber reports filed yet.</td></tr>
-                  )}
                 </tbody>
               </table>
             </div>

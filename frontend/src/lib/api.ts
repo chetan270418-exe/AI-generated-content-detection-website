@@ -136,6 +136,11 @@ export const translateApi = {
     api.post('/api/translate', data).then(res => res.data)
 };
 
+export const settingsApi = {
+  getSettings: () => api.get('/api/settings').then(res => res.data),
+  updateSettings: (data: any) => api.put('/api/settings', data).then(res => res.data)
+};
+
 export const subscriptionApi = {
   getStatus: async () => {
     const res = await api.get('/api/subscription/status');

@@ -10,8 +10,9 @@ from fastapi.staticfiles import StaticFiles
 from .config import get_settings
 from .database import init_db
 from .routers import auth, analyze, results, subscription, admin, feedback, cyber_report, translate
+from .routers import settings as settings_router
 
-settings = get_settings()
+app_settings = get_settings()
 
 app = FastAPI(
     title="Dictator API",
@@ -21,7 +22,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url],
+    allow_origins=[app_settings.frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,6 +49,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
 app.include_router(cyber_report.router, prefix="/api/cyber-report", tags=["cyber_report"])
 app.include_router(translate.router, prefix="/api/translate", tags=["translate"])
+app.include_router(settings_router.router, prefix="/api/settings", tags=["settings"])
 
 @app.get("/health")
 async def health_check():

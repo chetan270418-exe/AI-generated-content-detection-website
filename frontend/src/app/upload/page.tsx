@@ -219,8 +219,12 @@ export default function UploadPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="flex-grow max-w-4xl mx-auto w-full px-4 py-12"
+      className="relative flex-grow max-w-4xl mx-auto w-full px-4 py-12 pt-24"
     >
+      {/* Background Decor */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-to-r from-[#00d4ff]/8 via-[#8b5cf6]/8 to-[#ff3dff]/8 blur-[120px]" />
+      </div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
           <motion.h1 

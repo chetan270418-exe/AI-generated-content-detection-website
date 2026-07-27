@@ -4,17 +4,32 @@ from .frequency import compute_frequency_scores
 from ..common.label_config import resolve_ai_probability
 from ..common.ensemble import combine_signals
 from .explain import generate_heatmap
+from ..utils.cache import prediction_cache
+from ..utils.hashing import compute_dhash, hamming_distance
+import copy
 
 
 def predict_image(image_path: str) -> dict:
     """
-    Runs a 4-signal ensemble to detect AI-generated images:
-      1. Diffusion-era classifier (SDXL/Midjourney artifacts)
-      2. GAN-era classifier (StyleGAN/older artifacts)
-      3. ELA (Error Level Analysis for compression artifacts)
-      4. Fourier frequency spectrum (detects invisible upsampling artifacts)
+    Runs a 4-signal ensemble to detect AI-generated images.
+    Uses O(1) LRU Cache + Perceptual Hashing (pHash) to skip 
+    expensive model inference if this image was recently analyzed.
     """
     try:
+        # --- DSA CACHE LAYER ---
+        img_hash = compute_dhash(image_path)
+        
+        # O(N) scan bounded by small constant N (max 100 items). 
+        # For a truly massive DB, we'd use a KD-Tree/FAISS here.
+        for cached_key in list(prediction_cache.cache.keys()):
+            dist = hamming_distance(img_hash, cached_key)
+            if dist <= 2:  # Allow 2 bits of variation (e.g. slight JPEG compression)
+                cached_result = prediction_cache.get(cached_key)
+                if cached_result:
+                    print(f"[predict_image] CACHE HIT! Found near-match (distance {dist}). Skipping ML inference.")
+                    # Return a copy to prevent accidental mutation
+                    return copy.deepcopy(cached_result)
+        
         signals = []
         detailed_results = {}
 
@@ -100,12 +115,17 @@ def predict_image(image_path: str) -> dict:
         detailed_results["final_ai_probability"] = ensemble_result["final_ai_probability"]
         detailed_results["heatmap"] = heatmap_url
 
-        return {
+        final_result = {
             "verdict": verdict,
             "confidence": ensemble_result["confidence"],
             "explanation": explanation,
             "detailed_results": detailed_results,
         }
+        
+        # Save to O(1) LRU Cache
+        prediction_cache.put(img_hash, final_result)
+        
+        return final_result
     except Exception as e:
         return {
             "verdict": "inconclusive",

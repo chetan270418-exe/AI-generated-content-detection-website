@@ -10,6 +10,7 @@ from ..services.file_service import save_bytes
 from ..utils.pubsub import publish_admin_event
 from ..utils.file_validation import detect_category
 from ..config import get_settings
+from ..utils.rate_limiter import ml_rate_limiter
 
 from ml.image_detector.predict import predict_image
 from ml.text_detector.predict import predict_text
@@ -77,6 +78,9 @@ async def _complete_analysis(analysis: Analysis, predict_fn, predict_arg: Any):
         await analysis.save()
 
 async def _run_file_analysis(file: UploadFile, file_type: str, current_user: User):
+    # DSA: Sliding Window Rate Limiting (O(1) amortized, prevents burst abuse)
+    ml_rate_limiter.check_rate_limit(str(current_user.id))
+    
     await check_quota(current_user)
     content = await _read_and_validate(file, file_type, current_user)
     file_path = await save_bytes(content, file.filename, str(current_user.id))
@@ -122,6 +126,7 @@ async def analyze_audio(file: UploadFile = File(...), current_user: User = Depen
 
 @router.post("/text")
 async def analyze_text(request: TextAnalysisRequest, current_user: User = Depends(get_current_user)):
+    ml_rate_limiter.check_rate_limit(str(current_user.id))
     await check_quota(current_user)
     
     analysis = Analysis(
@@ -141,6 +146,7 @@ async def analyze_text(request: TextAnalysisRequest, current_user: User = Depend
 
 @router.post("/batch")
 async def analyze_batch(files: List[UploadFile] = File(...), current_user: User = Depends(get_current_user)):
+    ml_rate_limiter.check_rate_limit(str(current_user.id))
     if current_user.plan != "vip":
         raise HTTPException(status_code=403, detail="Batch upload is only available for VIP users.")
         

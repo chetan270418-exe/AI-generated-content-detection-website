@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+from pathlib import Path
+
+# Resolve .env from project root (2 levels up from backend/app/config.py)
+_ENV_FILE = Path(__file__).resolve().parent.parent.parent / ".env"
 
 class Settings(BaseSettings):
     mongodb_uri: str = "mongodb://localhost:27017"
@@ -30,8 +34,9 @@ class Settings(BaseSettings):
     
     frontend_url: str = "http://localhost:3000"
 
-    model_config = SettingsConfigDict(env_file="../.env", extra='ignore')
+    model_config = SettingsConfigDict(env_file=str(_ENV_FILE), extra='ignore')
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+

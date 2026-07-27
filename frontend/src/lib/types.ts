@@ -9,8 +9,9 @@ export interface User {
 
 export interface Analysis {
   id: string;
-  file_type: 'image' | 'text' | 'pdf' | 'video';
+  file_type: 'image' | 'text' | 'pdf' | 'video' | 'audio';
   original_filename?: string;
+  input_text?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   verdict?: 'ai_generated' | 'human_made' | 'inconclusive';
   confidence_score?: number;

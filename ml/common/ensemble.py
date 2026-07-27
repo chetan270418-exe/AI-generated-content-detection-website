@@ -14,9 +14,9 @@ weighted signal combination AND an explicit disagreement-aware verdict.
 
 from typing import List, Dict
 
-AI_THRESHOLD = 0.55
-HUMAN_THRESHOLD = 0.45
-DISAGREEMENT_THRESHOLD = 0.20  # agreement below this = signals don't agree enough to trust
+AI_THRESHOLD = 0.52          # was 0.55 — easier to flag AI
+HUMAN_THRESHOLD = 0.38       # was 0.45 — much harder to call human (avoids false negatives on diffusion images)
+DISAGREEMENT_THRESHOLD = 0.18  # slightly more tolerant of signal spread
 
 
 def combine_signals(signals: List[Dict]) -> Dict:
@@ -41,12 +41,35 @@ def combine_signals(signals: List[Dict]) -> Dict:
             "breakdown": [],
         }
 
-    # Outlier rejection (robust ensemble): If we have many signals, 
-    # downweight ones that completely contradict the consensus.
+    # --- Decision-Tree Aggregation Logic ---
+    # Not all signals are created equal. Forensic signals (ELA, Fourier, Perplexity)
+    # often catch artifacts that semantic classifiers (ViT, RoBERTa) miss.
+    for s in signals:
+        # Boost weight if a signal is extremely confident (>90% or <10%)
+        if s["ai_probability"] > 0.90 or s["ai_probability"] < 0.10:
+            s["weight"] *= 1.5
+
+        # Decision Node: If there's a strong conflict between classifiers and forensics,
+        # we trust forensics more for deepfakes.
+        # Modern diffusion models (DALL-E 3, Midjourney) have very clean forensics,
+        # so we also upweight the neural classifier signal in those cases.
+        is_forensic = any(name in s["name"].lower() for name in ["ela", "fourier", "error", "spectrum", "burstiness", "perplexity"])
+        is_classifier = any(name in s["name"].lower() for name in ["classifier", "diffusion", "gan"])
+        if is_forensic:
+            # If a forensic signal strongly suspects AI, double its weight
+            if s["ai_probability"] > 0.75:
+                s["weight"] *= 2.0
+            # Even moderate forensic suspicion (>0.55) gets a boost for diffusion-model detection
+            elif s["ai_probability"] > 0.55:
+                s["weight"] *= 1.3
+        if is_classifier and s["ai_probability"] > 0.60:
+            # Neural classifiers trained on diffusion data — trust them more at moderate confidence
+            s["weight"] *= 1.2
+
+    # Outlier rejection: Downweight signals that completely contradict the consensus
     if len(signals) >= 3:
         raw_mean = sum(s["ai_probability"] for s in signals) / len(signals)
         for s in signals:
-            # If a signal is more than 0.4 away from the mean, halve its weight
             if abs(s["ai_probability"] - raw_mean) > 0.4:
                 s["weight"] *= 0.5
 

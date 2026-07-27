@@ -1,46 +1,36 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence, Variants } from 'framer-motion'
-import { MessageSquare, Send, CheckCircle2, Loader2, AlertCircle, Bug, Lightbulb, HelpCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { MessageSquare, Send, CheckCircle2, Loader2, AlertCircle, Bot, Smile, Meh, Frown, ChevronDown, ChevronRight } from 'lucide-react'
 import api from '@/lib/api'
 
-const feedbackTypes = [
-  { value: 'bug', label: 'Bug Report', icon: Bug, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-  { value: 'suggestion', label: 'Feature Suggestion', icon: Lightbulb, color: '#eab308', bg: 'rgba(234,179,8,0.15)' },
-  { value: 'general', label: 'General Inquiry', icon: HelpCircle, color: '#00d4ff', bg: 'rgba(0,212,255,0.15)' },
-]
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
-  }
-}
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { 
-    opacity: 1, y: 0, 
-    transition: { type: 'spring', stiffness: 400, damping: 28 } 
-  }
-}
-
 export default function FeedbackPage() {
-  const [type, setType] = useState('general')
+  const [mood, setMood] = useState<'happy' | 'neutral' | 'sad'>('happy')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
-  const [charCount, setCharCount] = useState(0)
+  
+  // FAQ accordion state
+  const [openFaq, setOpenFaq] = useState<number | null>(0)
 
-  const selectedType = feedbackTypes.find(t => t.value === type)!
-
-  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value)
-    setCharCount(e.target.value.length)
-  }
+  const faqs = [
+    {
+      q: "How accurate is Dictator's AI?",
+      a: "Our AI model leverages advanced deep learning algorithms and ensemble forensic analysis, consistently achieving over 95% benchmark accuracy across various text formats and models."
+    },
+    {
+      q: "Can I integrate Dictator with my existing workflow?",
+      a: "Yes! Dictator provides RESTful API endpoints and WebSocket channels for seamless integration with custom CMS, automated verification scripts, or enterprise workflows."
+    },
+    {
+      q: "What data privacy measures are in place?",
+      a: "All uploaded content is analyzed in ephemeral memory and discarded immediately after processing. We strictly adhere to zero-retention policies and do not use your inputs to train public models."
+    }
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,10 +39,12 @@ export default function FeedbackPage() {
     setLoading(true)
     setError('')
     try {
-      await api.post('/api/feedback/submit', { type, message })
+      await api.post('/api/feedback/submit', { 
+        type: mood, 
+        message: `[Mood: ${mood}] [Name: ${name || 'Anonymous'}] [Email: ${email || 'Not provided'}] ${message}` 
+      })
       setSuccess(true)
       setMessage('')
-      setCharCount(0)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'An error occurred while submitting feedback.')
     } finally {
@@ -61,242 +53,180 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="flex-grow flex items-center justify-center p-4 py-12">
-      <motion.div 
-        initial={{ opacity: 0, y: 30, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="glass p-8 md:p-12 rounded-[32px] w-full max-w-2xl border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.5)] relative overflow-hidden"
-      >
-        {/* Ambient glow blobs */}
-        <motion.div 
-          animate={{ 
-            x: [0, 15, -10, 0], 
-            y: [0, -10, 15, 0],
-            scale: [1, 1.1, 0.95, 1]
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-0 right-0 w-72 h-72 bg-blue-500/8 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 pointer-events-none"
-        />
-        <motion.div 
-          animate={{ 
-            x: [0, -15, 10, 0], 
-            y: [0, 10, -15, 0],
-            scale: [1, 0.95, 1.1, 1]
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute bottom-0 left-0 w-72 h-72 bg-[var(--color-accent-real)]/8 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/3 pointer-events-none"
-        />
+    <div className="relative min-h-[calc(100vh-80px)] flex flex-col justify-between px-4 sm:px-6 lg:px-8 py-12 pt-24">
+      {/* Ambient background glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-r from-[#00d4ff]/10 via-[#8b5cf6]/10 to-[#ff3dff]/10 blur-[130px]" />
+      </div>
 
-        <div className="relative z-10">
-          {/* Header */}
-          <motion.div 
-            variants={containerVariants} initial="hidden" animate="show"
-            className="flex items-center gap-4 mb-10"
-          >
-            <motion.div 
-              variants={itemVariants}
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-14 h-14 rounded-[18px] bg-[var(--color-accent-real)]/15 flex items-center justify-center border border-[var(--color-accent-real)]/25 shadow-[0_0_20px_rgba(0,212,255,0.15)]"
-            >
-              <MessageSquare className="w-7 h-7 text-[var(--color-accent-real)]" />
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <h1 className="text-3xl font-bold tracking-tight">Feedback & Support</h1>
-              <p className="text-[var(--text-muted)] mt-1 text-sm">Help us improve the Dictator platform</p>
-            </motion.div>
-          </motion.div>
+      <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Side: Feedback Card matching Stitch mockup */}
+        <motion.div 
+          initial={{ opacity: 0, x: -25 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="lg:col-span-7 glass p-8 sm:p-10 rounded-[32px] border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl bg-[#0e1424]/85 relative overflow-hidden"
+        >
+          {/* Floating Robot Mascot Badge */}
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#00d4ff] to-[#8b5cf6] p-[2px] shadow-[0_0_30px_rgba(0,212,255,0.4)] mb-4 animate-float">
+              <div className="w-full h-full bg-[#0e1424] rounded-[22px] flex items-center justify-center text-[#00d4ff]">
+                <Bot size={40} />
+              </div>
+            </div>
+
+            {/* Emoji Mood Selector matching Stitch */}
+            <div className="flex items-center gap-6 my-4">
+              {[
+                { id: 'happy', label: 'Happy', icon: Smile, color: '#00d4ff' },
+                { id: 'neutral', label: 'Neutral', icon: Meh, color: '#9ca3af' },
+                { id: 'sad', label: 'Sad', icon: Frown, color: '#ff3dff' },
+              ].map((m) => {
+                const Icon = m.icon
+                const isActive = mood === m.id
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setMood(m.id as any)}
+                    className="flex flex-col items-center gap-1 group"
+                  >
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                      isActive 
+                        ? 'bg-[#00d4ff]/20 border-2 border-[#00d4ff] shadow-[0_0_20px_rgba(0,212,255,0.4)] scale-110' 
+                        : 'bg-black/40 border border-white/10 opacity-60 hover:opacity-100 hover:border-white/30'
+                    }`}>
+                      <Icon size={26} style={{ color: isActive ? m.color : '#9ca3af' }} />
+                    </div>
+                    <span className={`text-xs font-semibold ${isActive ? 'text-white' : 'text-gray-500'}`}>
+                      {m.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <h2 className="text-2xl font-bold text-white mt-2">How's your experience with Dictator?</h2>
+          </div>
 
           <AnimatePresence mode="wait">
             {success ? (
               <motion.div 
-                key="success"
-                initial={{ opacity: 0, scale: 0.85, y: 20 }} 
-                animate={{ opacity: 1, scale: 1, y: 0 }} 
-                exit={{ opacity: 0, scale: 0.85, y: -20 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                className="bg-green-500/8 border border-green-500/25 rounded-[24px] p-10 text-center"
+                initial={{ opacity: 0, scale: 0.9 }} 
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-8 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center"
               >
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 15, delay: 0.15 }}
-                  className="w-20 h-20 bg-green-500/15 rounded-full flex items-center justify-center mx-auto mb-5 border border-green-500/20"
-                >
-                  <motion.div
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1 }}
-                    transition={{ delay: 0.3, duration: 0.4 }}
-                  >
-                    <CheckCircle2 className="w-10 h-10 text-green-400" />
-                  </motion.div>
-                </motion.div>
-                <motion.h3 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 }}
-                  className="text-2xl font-bold text-green-400 mb-2"
-                >
-                  Thank You!
-                </motion.h3>
-                <motion.p 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 }}
-                  className="text-gray-400 mb-8"
-                >
-                  Your feedback has been submitted to our team. We appreciate your input!
-                </motion.p>
-                <motion.button 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.45 }}
-                  whileHover={{ scale: 1.04, backgroundColor: 'rgba(255,255,255,0.1)' }}
-                  whileTap={{ scale: 0.97 }}
+                <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-3" />
+                <h3 className="text-2xl font-bold text-emerald-400 mb-2">Feedback Received!</h3>
+                <p className="text-gray-300 text-sm mb-6">Thank you for helping us refine Dictator.</p>
+                <button
                   onClick={() => setSuccess(false)}
-                  className="px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm font-medium transition-colors"
+                  className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-colors"
                 >
-                  Submit another response
-                </motion.button>
+                  Submit another message
+                </button>
               </motion.div>
             ) : (
-              <motion.form 
-                key="form"
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                exit={{ opacity: 0, y: -20 }}
-                onSubmit={handleSubmit} 
-                className="space-y-7"
-              >
-                {/* Error */}
-                <AnimatePresence>
-                  {error && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0, y: -10 }}
-                      animate={{ opacity: 1, height: 'auto', y: 0 }}
-                      exit={{ opacity: 0, height: 0, y: -10 }}
-                      className="p-4 bg-red-500/10 border border-red-500/25 rounded-[16px] flex items-center gap-3 text-red-400 overflow-hidden"
-                    >
-                      <AlertCircle size={18} className="flex-shrink-0" />
-                      <p className="text-sm font-medium">{error}</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Feedback Type Cards */}
-                <motion.div variants={itemVariants}>
-                  <label className="block text-sm font-medium text-gray-300 mb-3">What kind of feedback?</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {feedbackTypes.map((ft) => {
-                      const Icon = ft.icon
-                      const isActive = type === ft.value
-                      return (
-                        <motion.button
-                          key={ft.value}
-                          type="button"
-                          onClick={() => setType(ft.value)}
-                          whileHover={{ scale: 1.03, y: -2 }}
-                          whileTap={{ scale: 0.97 }}
-                          className={`relative p-4 rounded-[16px] border text-center transition-all duration-200 cursor-pointer ${
-                            isActive 
-                              ? 'border-white/20 shadow-lg' 
-                              : 'border-[var(--border-color)] hover:border-white/15'
-                          }`}
-                          style={{
-                            backgroundColor: isActive ? ft.bg : 'rgba(0,0,0,0.3)',
-                          }}
-                        >
-                          {isActive && (
-                            <motion.div 
-                              layoutId="activeGlow"
-                              className="absolute inset-0 rounded-[16px] pointer-events-none"
-                              style={{ boxShadow: `0 0 20px ${ft.bg}` }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            />
-                          )}
-                          <motion.div
-                            animate={isActive ? { rotate: [0, -10, 10, 0] } : {}}
-                            transition={{ duration: 0.4 }}
-                          >
-                            <Icon 
-                              size={24} 
-                              className="mx-auto mb-2 transition-colors"
-                              style={{ color: isActive ? ft.color : '#6b7280' }}
-                            />
-                          </motion.div>
-                          <span className={`text-xs font-medium transition-colors ${isActive ? 'text-white' : 'text-gray-500'}`}>
-                            {ft.label}
-                          </span>
-                        </motion.button>
-                      )
-                    })}
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm font-medium">
+                    {error}
                   </div>
-                </motion.div>
+                )}
 
-                {/* Message */}
-                <motion.div variants={itemVariants}>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Your Message</label>
-                  <div className="relative group">
-                    <textarea 
-                      value={message}
-                      onChange={handleMessageChange}
-                      placeholder="Describe your issue or share your ideas..."
-                      rows={5}
-                      maxLength={2000}
-                      className="w-full bg-black/40 border border-[var(--border-color)] rounded-[16px] px-5 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--color-accent-real)] transition-all duration-300 resize-none group-hover:border-white/15"
-                      required
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">Name</label>
+                    <input
+                      type="text"
+                      placeholder="Your Name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-black/40 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d4ff] transition-colors text-sm"
                     />
-                    <motion.div 
-                      className="absolute bottom-3 right-4 text-xs font-mono"
-                      animate={{ 
-                        color: charCount > 1800 ? '#ef4444' : charCount > 0 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)'
-                      }}
-                    >
-                      {charCount}/2000
-                    </motion.div>
                   </div>
-                </motion.div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">Email</label>
+                    <input
+                      type="email"
+                      placeholder="Your Email Address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-black/40 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d4ff] transition-colors text-sm"
+                    />
+                  </div>
+                </div>
 
-                {/* Submit */}
-                <motion.div variants={itemVariants}>
-                  <motion.button 
-                    type="submit" 
-                    disabled={loading || !message.trim()}
-                    whileHover={!loading && message.trim() ? { scale: 1.02, boxShadow: '0 0 30px rgba(0,212,255,0.3)' } : {}}
-                    whileTap={!loading && message.trim() ? { scale: 0.98 } : {}}
-                    className="w-full bg-gradient-to-r from-[var(--color-accent-real)] to-[#0096c7] text-black font-bold text-lg rounded-[16px] py-4 flex items-center justify-center gap-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden"
-                  >
-                    {/* Shimmer effect */}
-                    {!loading && message.trim() && (
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                        initial={{ x: '-100%' }}
-                        animate={{ x: '200%' }}
-                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                      />
-                    )}
-                    <span className="relative z-10 flex items-center gap-3">
-                      {loading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <motion.div
-                          animate={message.trim() ? { x: [0, 4, 0] } : {}}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                        >
-                          <Send className="w-5 h-5" />
-                        </motion.div>
-                      )}
-                      {loading ? 'Submitting...' : 'Send Feedback'}
-                    </span>
-                  </motion.button>
-                </motion.div>
-              </motion.form>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">Message</label>
+                  <textarea
+                    rows={4}
+                    required
+                    placeholder="Share your thoughts, suggestions, or bug reports..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full p-4 bg-black/40 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d4ff] transition-colors text-sm resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 rounded-2xl bg-[#00d4ff] hover:bg-[#33ddff] text-black font-extrabold text-base shadow-[0_0_30px_rgba(0,212,255,0.5)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+                >
+                  {loading ? <Loader2 className="animate-spin text-black" size={20} /> : (
+                    <>Submit Feedback <Send size={18} /></>
+                  )}
+                </button>
+              </form>
             )}
           </AnimatePresence>
+        </motion.div>
+
+        {/* Right Side: FAQ Accordion matching Stitch mockup */}
+        <motion.div 
+          initial={{ opacity: 0, x: 25 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="lg:col-span-5 space-y-6"
+        >
+          <div className="glass p-8 rounded-[32px] border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl bg-[#0e1424]/85">
+            <h2 className="text-2xl font-bold text-white mb-6">Frequently Asked Questions</h2>
+
+            <div className="space-y-4">
+              {faqs.map((faq, index) => {
+                const isOpen = openFaq === index
+                return (
+                  <div key={index} className="glass rounded-2xl border border-white/10 overflow-hidden">
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? null : index)}
+                      className="w-full p-5 flex items-center justify-between text-left font-bold text-sm text-white hover:bg-white/5 transition-colors gap-4"
+                    >
+                      <span>{faq.q}</span>
+                      {isOpen ? <ChevronDown size={18} className="text-[#00d4ff] shrink-0" /> : <ChevronRight size={18} className="text-gray-400 shrink-0" />}
+                    </button>
+                    {isOpen && (
+                      <div className="px-5 pb-5 pt-1 text-xs text-gray-400 leading-relaxed border-t border-white/5">
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Footer matching Stitch mockup */}
+      <footer className="mt-16 text-center text-xs text-gray-500 border-t border-white/10 pt-8">
+        <div className="flex justify-center items-center gap-6 mb-3">
+          <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+          <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+          <a href="#" className="hover:text-white transition-colors">Contact Us</a>
         </div>
-      </motion.div>
+        <p>© 2026 Dictator AI. All rights reserved.</p>
+      </footer>
     </div>
   )
 }

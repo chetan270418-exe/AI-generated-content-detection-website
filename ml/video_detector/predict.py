@@ -11,7 +11,7 @@ import numpy as np
 from ml.image_detector.predict import predict_image
 
 
-def predict_video(video_path: str, max_frames: int = 30) -> dict:
+def predict_video(video_path: str, max_frames: int = 10) -> dict:
     """
     Analyze a video for deepfake / AI-generated content.
     
@@ -30,10 +30,42 @@ def predict_video(video_path: str, max_frames: int = 30) -> dict:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         duration = total_frames / fps if fps > 0 else 0
         
-        # Determine which frames to sample (1 per second, capped at max_frames)
-        sample_interval = max(1, int(fps))  # 1 frame per second
-        frame_indices = list(range(0, total_frames, sample_interval))[:max_frames]
+        # --- Dynamic Frame Selection Algorithm ---
+        # Instead of naively grabbing 1 frame per second, we step through the video
+        # and calculate the absolute pixel difference between frames.
+        # We only run the expensive ML models on frames where a significant "scene change"
+        # or motion occurred, maximizing forensic value while minimizing compute.
+        frame_indices = []
         
+        # Fast-forward interval (check 5 times a second instead of every frame)
+        check_interval = max(1, int(fps / 5)) 
+        
+        last_frame_gray = None
+        for check_idx in range(0, total_frames, check_interval):
+            if len(frame_indices) >= max_frames:
+                break
+                
+            cap.set(cv2.CAP_PROP_POS_FRAMES, check_idx)
+            ret, frame = cap.read()
+            if not ret:
+                continue
+                
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # Resize drastically for fast O(1) difference calculation
+            gray = cv2.resize(gray, (64, 64))
+            
+            if last_frame_gray is None:
+                frame_indices.append(check_idx)
+                last_frame_gray = gray
+            else:
+                # Calculate Mean Absolute Difference
+                diff = cv2.absdiff(gray, last_frame_gray)
+                mean_diff = np.mean(diff)
+                
+                # If pixel difference > 25 (~10% of 255), we consider it a scene change
+                if mean_diff > 25:
+                    frame_indices.append(check_idx)
+                    last_frame_gray = gray        
         frame_results = []
         ai_count = 0
         human_count = 0

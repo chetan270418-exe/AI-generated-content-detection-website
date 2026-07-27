@@ -20,5 +20,12 @@ class User(Document):
     otp_failed_attempts: int = 0
     otp_locked_until: Optional[datetime] = None
 
+    # User Preferences (Settings)
+    email_alerts: bool = True
+    push_notifications: bool = True
+    two_factor: bool = True
+    api_access: bool = False
+    username: Optional[str] = None
+
     class Settings:
         name = "users"

@@ -1,55 +1,117 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg-primary: #0a0a0f;
-  --color-bg-surface: #1a1a2e;
+  --color-bg-primary: #050811;
+  --color-bg-surface: #0e1322;
   --color-accent-real: #00d4ff;
-  --color-accent-ai: #ff006e;
-  --color-accent-neutral: #ffbe0b;
-  --bg-color: #f8f9fa;
-  --surface-color: #ffffff;
-  --text-color: #000000;
-  --text-muted: #666666;
-  --border-color: rgba(0, 0, 0, 0.1);
+  --color-accent-ai: #ff3dff;
+  --color-accent-purple: #8b5cf6;
+  --color-accent-green: #10b981;
+  --bg-color: #050811;
+  --surface-color: rgba(15, 23, 42, 0.65);
+  --text-color: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.08);
 }
 
 .dark {
-  --bg-color: #0a0a0f;
-  --surface-color: #1a1a2e;
-  --text-color: #ffffff;
-  --text-muted: #9ca3af;
+  --bg-color: #050811;
+  --surface-color: rgba(15, 23, 42, 0.65);
+  --text-color: #f8fafc;
+  --text-muted: #94a3b8;
   --border-color: rgba(255, 255, 255, 0.08);
 }
 
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 body {
-  background-color: var(--bg-color);
+  background-color: #050811;
   color: var(--text-color);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.12), transparent 40%),
+    radial-gradient(circle at 100% 50%, rgba(255, 61, 255, 0.08), transparent 35%),
+    radial-gradient(circle at 0% 100%, rgba(139, 92, 246, 0.08), transparent 35%);
+  background-attachment: fixed;
 }
 
+/* Glassmorphism Premium Card */
 .glass {
-  background: var(--surface-color);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-color);
+  background: rgba(14, 20, 36, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-.dark .glass {
-  background: rgba(255, 255, 255, 0.05);
+.glass-cyan {
+  background: rgba(14, 20, 36, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
+}
+
+.glass-magenta {
+  background: rgba(14, 20, 36, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 61, 255, 0.3);
+  box-shadow: 0 0 30px rgba(255, 61, 255, 0.15);
 }
 
 .glow-cyan {
-  box-shadow: 0 0 15px 2px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
 }
 
 .glow-magenta {
-  box-shadow: 0 0 15px 2px rgba(255, 0, 110, 0.3);
+  box-shadow: 0 0 25px rgba(255, 61, 255, 0.4);
 }
 
+.glow-blue-lg {
+  box-shadow: 0 0 50px 10px rgba(0, 212, 255, 0.25);
+}
+
+/* 3D Card Hover Effect */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.card-3d-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-3d-glow:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 20px 40px -15px rgba(0, 212, 255, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050811;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.5);
+}
+
+/* Keyframe Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -61,11 +123,23 @@ body {
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes rotateSphere {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
 .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
-.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+.animate-spin-slow { animation: rotateSphere 20s linear infinite; }
