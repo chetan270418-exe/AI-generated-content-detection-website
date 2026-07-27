@@ -7,6 +7,45 @@ import redis
 try:
     redis_client = redis.Redis(host='localhost', port=6379, db=1, decode_responses=True)
     redis_client.ping()
+    
+    # Lua script for atomic sliding window rate limiting
+    # KEYS[1]: rate limit key
+    # ARGV[1]: current time (now)
+    # ARGV[2]: window start time
+    # ARGV[3]: limit
+    # ARGV[4]: window seconds
+    # Returns: { 1: allowed (1/0), 2: retry_after_seconds }
+    RATE_LIMIT_LUA = """
+    local key = KEYS[1]
+    local now = tonumber(ARGV[1])
+    local window_start = tonumber(ARGV[2])
+    local limit = tonumber(ARGV[3])
+    local window_seconds = tonumber(ARGV[4])
+    
+    -- 1. Remove timestamps outside the sliding window
+    redis.call('ZREMRANGEBYSCORE', key, '-inf', window_start)
+    
+    -- 2. Count requests in the current window
+    local current_count = redis.call('ZCOUNT', key, window_start, now)
+    
+    if current_count >= limit then
+        -- Find oldest request to calculate retry
+        local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+        local retry_after = window_seconds
+        if oldest and oldest[2] then
+            retry_after = math.floor((tonumber(oldest[2]) + window_seconds) - now) + 1
+        end
+        return {0, retry_after}
+    end
+    
+    -- 3. Add current request and update TTL
+    redis.call('ZADD', key, now, now)
+    redis.call('EXPIRE', key, window_seconds)
+    
+    return {1, 0}
+    """
+    check_rate_limit_script = redis_client.register_script(RATE_LIMIT_LUA)
+    
 except (redis.ConnectionError, redis.TimeoutError):
     redis_client = None
 
@@ -27,33 +66,17 @@ class SlidingWindowRateLimiter:
         window_start = now - self.window_seconds
         
         if redis_client:
-            # --- REDIS IMPLEMENTATION ---
+            # --- ATOMIC REDIS IMPLEMENTATION ---
+            # Using Lua script prevents Time-of-check to Time-of-use (TOCTOU) race conditions
             key = f"rate_limit:{client_id}"
-            pipeline = redis_client.pipeline()
             
-            # 1. Remove timestamps outside the sliding window
-            pipeline.zremrangebyscore(key, 0, window_start)
-            # 2. Count requests in the current window
-            pipeline.zcount(key, window_start, now)
-            # 3. Add current request (score=timestamp, value=timestamp)
-            pipeline.zadd(key, {str(now): now})
-            # 4. Set TTL to window_seconds so we don't leak memory for inactive clients
-            pipeline.expire(key, self.window_seconds)
+            # Script returns [is_allowed (1 or 0), retry_after]
+            is_allowed, retry_after = check_rate_limit_script(
+                keys=[key],
+                args=[now, window_start, self.limit, self.window_seconds]
+            )
             
-            results = pipeline.execute()
-            req_count = results[1]
-            
-            if req_count >= self.limit:
-                # If over limit, we technically just added a new request. Let's remove it.
-                redis_client.zrem(key, str(now))
-                
-                # Find oldest request to calculate retry
-                oldest = redis_client.zrange(key, 0, 0, withscores=True)
-                if oldest:
-                    retry_after = int((oldest[0][1] + self.window_seconds) - now) + 1
-                else:
-                    retry_after = self.window_seconds
-                    
+            if is_allowed == 0:
                 raise HTTPException(
                     status_code=429, 
                     detail=f"Rate limit exceeded ({self.limit} requests per {self.window_seconds}s). Please try again in {retry_after} seconds."
