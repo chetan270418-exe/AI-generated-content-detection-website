@@ -1,6 +1,41 @@
 import cv2
 import numpy as np
 import hashlib
+from scipy.fftpack import dct
+
+def compute_phash(image_path: str) -> str:
+    """
+    Computes a Perceptual Hash (pHash) using Discrete Cosine Transform (DCT).
+    Much more robust to cropping, scaling, and heavy compression than dHash.
+    """
+    try:
+        # 1. Read as grayscale and resize to 32x32
+        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            return _compute_sha256(image_path)
+            
+        resized = cv2.resize(img, (32, 32), interpolation=cv2.INTER_AREA)
+        
+        # 2. Compute 2D DCT
+        # Apply DCT to rows, then columns
+        dct_rows = dct(resized, type=2, norm='ortho', axis=1)
+        dct_2d = dct(dct_rows, type=2, norm='ortho', axis=0)
+        
+        # 3. Keep top-left 8x8 (low frequencies)
+        dct_low = dct_2d[:8, :8]
+        
+        # 4. Compute median (excluding the DC term at 0,0 which is just average color)
+        flat = dct_low.flatten()
+        median_val = np.median(flat[1:])
+        
+        # 5. Build 64-bit hash
+        hash_bits = ['1' if val > median_val else '0' for val in flat]
+        hash_str = ''.join(hash_bits)
+        
+        return f"{int(hash_str, 2):016x}"
+    except Exception as e:
+        print(f"[pHash] Error hashing image {image_path}: {e}")
+        return _compute_sha256(image_path)
 
 def compute_dhash(image_path: str) -> str:
     """
@@ -43,7 +78,7 @@ def _compute_sha256(file_path: str) -> str:
 
 def hamming_distance(hash1: str, hash2: str) -> int:
     """
-    Calculate the Hamming distance between two hex strings (dHashes).
+    Calculate the Hamming distance between two hex strings (Hashes).
     A distance of 0 means identical. < 10 means likely variations of same image.
     """
     if len(hash1) != len(hash2):

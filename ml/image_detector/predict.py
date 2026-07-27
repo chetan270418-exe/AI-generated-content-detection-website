@@ -5,7 +5,7 @@ from ..common.label_config import resolve_ai_probability
 from ..common.ensemble import combine_signals
 from .explain import generate_heatmap
 from ..utils.cache import prediction_cache
-from ..utils.hashing import compute_dhash, hamming_distance
+from ..utils.hashing import compute_phash, hamming_distance
 import copy
 
 
@@ -17,7 +17,7 @@ def predict_image(image_path: str) -> dict:
     """
     try:
         # --- DSA CACHE LAYER ---
-        img_hash = compute_dhash(image_path)
+        img_hash = compute_phash(image_path)
         
         # O(N) scan bounded by small constant N (max 100 items). 
         # For a truly massive DB, we'd use a KD-Tree/FAISS here.

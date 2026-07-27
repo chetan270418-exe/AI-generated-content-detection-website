@@ -41,10 +41,14 @@ def combine_signals(signals: List[Dict]) -> Dict:
             "breakdown": [],
         }
 
+    import copy
+    # Make a copy of signals to avoid mutating the original inputs
+    signals_copy = copy.deepcopy(signals)
+
     # --- Decision-Tree Aggregation Logic ---
     # Not all signals are created equal. Forensic signals (ELA, Fourier, Perplexity)
     # often catch artifacts that semantic classifiers (ViT, RoBERTa) miss.
-    for s in signals:
+    for s in signals_copy:
         # Boost weight if a signal is extremely confident (>90% or <10%)
         if s["ai_probability"] > 0.90 or s["ai_probability"] < 0.10:
             s["weight"] *= 1.5
@@ -67,18 +71,18 @@ def combine_signals(signals: List[Dict]) -> Dict:
             s["weight"] *= 1.2
 
     # Outlier rejection: Downweight signals that completely contradict the consensus
-    if len(signals) >= 3:
-        raw_mean = sum(s["ai_probability"] for s in signals) / len(signals)
-        for s in signals:
+    if len(signals_copy) >= 3:
+        raw_mean = sum(s["ai_probability"] for s in signals_copy) / len(signals_copy)
+        for s in signals_copy:
             if abs(s["ai_probability"] - raw_mean) > 0.4:
                 s["weight"] *= 0.5
 
-    total_weight = sum(s["weight"] for s in signals) or 1.0
-    final_score = sum(s["ai_probability"] * s["weight"] for s in signals) / total_weight
+    total_weight = sum(s["weight"] for s in signals_copy) or 1.0
+    final_score = sum(s["ai_probability"] * s["weight"] for s in signals_copy) / total_weight
 
     # Agreement = how tightly clustered the individual signal scores are.
-    mean = sum(s["ai_probability"] for s in signals) / len(signals)
-    variance = sum((s["ai_probability"] - mean) ** 2 for s in signals) / len(signals)
+    mean = sum(s["ai_probability"] for s in signals_copy) / len(signals_copy)
+    variance = sum((s["ai_probability"] - mean) ** 2 for s in signals_copy) / len(signals_copy)
     spread = variance ** 0.5
     agreement = max(0.0, 1.0 - (spread / 0.5))
 
@@ -106,6 +110,6 @@ def combine_signals(signals: List[Dict]) -> Dict:
         "agreement": round(agreement, 3),
         "breakdown": [
             {"name": s["name"], "ai_probability": round(s["ai_probability"], 4), "weight": s["weight"]}
-            for s in signals
+            for s in signals_copy
         ],
     }
