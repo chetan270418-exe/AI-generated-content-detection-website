@@ -1,0 +1,9 @@
+# Optional: install this INSTEAD of the onnxruntime line in requirements.txt
+# if you have an NVIDIA GPU with CUDA + cuDNN installed.
+#
+#   pip uninstall onnxruntime
+#   pip install -r ml/requirements-gpu.txt
+#
+# No code changes needed -- model.py's _get_provider() already auto-detects
+# CUDAExecutionProvider when it's available and falls back to CPU otherwise.
+onnxruntime-gpu>=1.18.0,<1.19.0

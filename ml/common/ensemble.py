@@ -13,11 +13,43 @@ weighted signal combination AND an explicit disagreement-aware verdict.
 """
 
 from typing import List, Dict
+import os
 
 AI_THRESHOLD = 0.52          # was 0.55 — easier to flag AI
 HUMAN_THRESHOLD = 0.38       # was 0.45 — much harder to call human (avoids false negatives on diffusion images)
 DISAGREEMENT_THRESHOLD = 0.18  # slightly more tolerant of signal spread
 
+# Path to an optional learned combiner trained by
+# ml/common/train_ensemble_combiner.py. If this file exists and its feature
+# set matches the signals passed in, we use it instead of the heuristic
+# weight-multiplier logic below. If it's missing (fresh clone, or you haven't
+# trained one yet), everything falls back to the original heuristic exactly
+# as before -- this is purely additive.
+_COMBINER_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "ensemble_combiner.joblib"
+)
+_combiner_cache = {"loaded": False, "model": None, "signal_names": None}
+
+
+def _get_learned_combiner():
+    """Lazily loads the learned combiner once per process. Returns
+    (model, signal_names) or (None, None) if no trained combiner exists yet."""
+    if not _combiner_cache["loaded"]:
+        _combiner_cache["loaded"] = True
+        if os.path.exists(_COMBINER_PATH):
+            try:
+                import joblib
+                bundle = joblib.load(_COMBINER_PATH)
+                _combiner_cache["model"] = bundle["model"]
+                _combiner_cache["signal_names"] = bundle["signal_names"]
+                print(f"[ensemble] Loaded learned combiner from {_COMBINER_PATH} "
+                      f"({len(bundle['signal_names'])} signals).")
+            except Exception as e:
+                print(f"[ensemble] Failed to load learned combiner, falling back to heuristic: {e}")
+    return _combiner_cache["model"], _combiner_cache["signal_names"]
+
+
+    return _combiner_cache["model"], _combiner_cache["signal_names"]
 
 def combine_signals(signals: List[Dict]) -> Dict:
     """
@@ -38,6 +70,7 @@ def combine_signals(signals: List[Dict]) -> Dict:
             "verdict": "inconclusive",
             "confidence": 0.0,
             "agreement": 0.0,
+            "used_learned_combiner": False,
             "breakdown": [],
         }
 
@@ -78,7 +111,21 @@ def combine_signals(signals: List[Dict]) -> Dict:
                 s["weight"] *= 0.5
 
     total_weight = sum(s["weight"] for s in signals_copy) or 1.0
-    final_score = sum(s["ai_probability"] * s["weight"] for s in signals_copy) / total_weight
+    heuristic_score = sum(s["ai_probability"] * s["weight"] for s in signals_copy) / total_weight
+
+    # If a learned combiner has been trained (see train_ensemble_combiner.py)
+    # and this call's signal names match what it was trained on, prefer its
+    # output over the hand-tuned heuristic above. The heuristic still runs
+    # unconditionally so `breakdown` and agreement stay identical either way.
+    final_score = heuristic_score
+    used_learned_combiner = False
+    combiner_model, combiner_signal_names = _get_learned_combiner()
+    if combiner_model is not None:
+        raw_probs = {s["name"]: s["ai_probability"] for s in signals}
+        if set(combiner_signal_names) <= set(raw_probs.keys()):
+            feature_vector = [[raw_probs[name] for name in combiner_signal_names]]
+            final_score = float(combiner_model.predict_proba(feature_vector)[0][1])
+            used_learned_combiner = True
 
     # Agreement = how tightly clustered the individual signal scores are.
     mean = sum(s["ai_probability"] for s in signals_copy) / len(signals_copy)
@@ -108,6 +155,7 @@ def combine_signals(signals: List[Dict]) -> Dict:
         "verdict": verdict,
         "confidence": confidence,
         "agreement": round(agreement, 3),
+        "used_learned_combiner": used_learned_combiner,
         "breakdown": [
             {"name": s["name"], "ai_probability": round(s["ai_probability"], 4), "weight": s["weight"]}
             for s in signals_copy

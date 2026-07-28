@@ -19,6 +19,9 @@ def evaluate_modality(modality: str, dataset_path: str, predict_fn):
     y_pred = []
     inconclusive_count = 0
     agreements = []
+    # signal_name -> {"probs": [...], "labels": [...]} across all samples,
+    # so we can see which individual signal is actually earning its weight.
+    per_signal = {}
     
     start_time = time.time()
     
@@ -40,6 +43,14 @@ def evaluate_modality(modality: str, dataset_path: str, predict_fn):
             detailed = result.get("detailed_results", {})
             if "agreement" in detailed:
                 agreements.append(detailed["agreement"])
+                
+            # Record each individual signal's raw probability against the true
+            # label, regardless of whether the ensemble verdict was conclusive.
+            for sig in detailed.get("signals", []):
+                name = sig["name"]
+                per_signal.setdefault(name, {"probs": [], "labels": []})
+                per_signal[name]["probs"].append(sig["ai_probability"])
+                per_signal[name]["labels"].append(1 if label == "ai_generated" else 0)
                 
             if verdict == "inconclusive":
                 inconclusive_count += 1
@@ -77,6 +88,25 @@ def evaluate_modality(modality: str, dataset_path: str, predict_fn):
     cm = confusion_matrix(y_true_bin, y_pred_bin, labels=[1, 0])
     
     avg_agreement = sum(agreements) / len(agreements) if agreements else 0
+
+    # Per-signal accuracy: threshold each signal's own probability at 0.5 and
+    # score it against ground truth, independent of the ensemble verdict.
+    # This tells you which signals are actually pulling their weight vs. which
+    # ones are just noise (or worse, actively wrong) in the ensemble.
+    signal_rows = []
+    for name, data_ in sorted(per_signal.items()):
+        preds = [1 if p >= 0.5 else 0 for p in data_["probs"]]
+        labels = data_["labels"]
+        sig_acc = accuracy_score(labels, preds)
+        sig_prec = precision_score(labels, preds, zero_division=0)
+        sig_rec = recall_score(labels, preds, zero_division=0)
+        signal_rows.append((name, sig_acc, sig_prec, sig_rec, len(labels)))
+
+    signal_table = "\n".join(
+        f"| {name} | {acc*100:.1f}% | {prec*100:.1f}% | {rec*100:.1f}% | {count} |"
+        for name, acc, prec, rec, count in signal_rows
+    )
+
     
     report = f"""# 📊 Evaluation Report: {modality.capitalize()} Detector
 
@@ -101,7 +131,12 @@ def evaluate_modality(modality: str, dataset_path: str, predict_fn):
 ## 🧠 Ensemble Confidence
 - **Average Signal Agreement:** {avg_agreement*100:.2f}%
 
-*Note: Inconclusive results occur when the ensemble's signals disagree significantly, prioritizing safety over forcing a wrong guess.*
+## 🔍 Per-Signal Breakdown (each signal alone, thresholded at 0.5)
+| Signal | Accuracy | Precision (AI) | Recall (AI) | N |
+|---|---|---|---|---|
+{signal_table}
+
+*Note: Inconclusive results occur when the ensemble's signals disagree significantly, prioritizing safety over forcing a wrong guess. Use the per-signal table above to decide which signals deserve more ensemble weight and which are dragging accuracy down.*
 """
 
     report_path = f"ml/reports/{modality}_eval.md"

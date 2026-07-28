@@ -82,6 +82,11 @@ pip install -r backend/requirements.txt
 pip install -r ml/requirements.txt
 ```
 
+> **Have a CUDA GPU?** After the step above, run
+> `pip uninstall onnxruntime && pip install -r ml/requirements-gpu.txt`.
+> `model.py`'s `_get_provider()` auto-detects `CUDAExecutionProvider` and
+> switches to it — no other code changes needed. Skip this if you're on CPU only.
+
 ### 4. Download & Export ML Models
 
 ```bash
@@ -90,6 +95,22 @@ python ml/export_models.py
 
 # Quantize models to INT8 for low memory usage (optional but recommended)
 python ml/quantize_models.py
+```
+
+### 4b. Evaluate & Improve Accuracy (optional)
+
+```bash
+# Build a larger, held-out benchmark instead of guessing accuracy from a handful of examples
+python ml/build_eval_dataset.py --n 300 --skip-rows 8000 --out ml/data/text_eval_dataset.jsonl
+python ml/build_eval_dataset.py --n 150 --skip-rows 20000 --out ml/data/text_train_split.jsonl
+
+# See overall AND per-signal accuracy (which of the 7 text signals is actually helping)
+python ml/evaluate.py --modality text --dataset ml/data/text_eval_dataset.jsonl
+
+# Optional: replace the hand-tuned ensemble weights in ensemble.py with weights
+# learned from data (train on the *_train_split, keep *_eval_dataset untouched for reporting)
+python -m ml.common.train_ensemble_combiner --dataset ml/data/text_train_split.jsonl
+python ml/evaluate.py --modality text --dataset ml/data/text_eval_dataset.jsonl  # re-check with the learned combiner
 ```
 
 ### 5. Frontend Setup

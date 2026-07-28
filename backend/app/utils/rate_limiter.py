@@ -1,5 +1,5 @@
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List
 from fastapi import HTTPException
 import redis
 
@@ -39,6 +39,9 @@ try:
     end
     
     -- 3. Add current request and update TTL
+    -- Note: Using 'now' as both score and member. Microsecond collisions 
+    -- could technically merge two requests into one entry, but the risk 
+    -- is negligible for this application's scale.
     redis.call('ZADD', key, now, now)
     redis.call('EXPIRE', key, window_seconds)
     
