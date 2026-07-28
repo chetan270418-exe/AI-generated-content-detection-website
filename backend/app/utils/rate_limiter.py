@@ -1,13 +1,15 @@
 import time
 from typing import Dict, List
 from fastapi import HTTPException
+import os
 import redis
 
-# Redis connection for rate limiting (fallback to None if unavailable)
+# Redis connection for rate limiting — reads REDIS_URL env var so it works
+# on localhost in dev and on AWS/Docker in production without code changes.
+_redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 try:
-    redis_client = redis.Redis(host='localhost', port=6379, db=1, decode_responses=True)
+    redis_client = redis.from_url(_redis_url, db=1, decode_responses=True)
     redis_client.ping()
-    
     # Lua script for atomic sliding window rate limiting
     # KEYS[1]: rate limit key
     # ARGV[1]: current time (now)
