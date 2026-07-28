@@ -48,9 +48,6 @@ def _get_learned_combiner():
                 print(f"[ensemble] Failed to load learned combiner, falling back to heuristic: {e}")
     return _combiner_cache["model"], _combiner_cache["signal_names"]
 
-
-    return _combiner_cache["model"], _combiner_cache["signal_names"]
-
 def combine_signals(signals: List[Dict]) -> Dict:
     """
     signals: list of {"name": str, "ai_probability": float (0-1), "weight": float}
