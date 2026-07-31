@@ -105,10 +105,10 @@ def predict_text(text: str) -> dict:
                 f"signal agreement: {ensemble_result['agreement']*100:.0f}%). The text shows natural "
                 f"human variation in entropy, vocabulary, and sentence structure."
             )
-
         detailed_results["signals"] = ensemble_result["breakdown"]
         detailed_results["agreement"] = ensemble_result["agreement"]
         detailed_results["final_ai_probability"] = ensemble_result["final_ai_probability"]
+        detailed_results["used_learned_combiner"] = ensemble_result["used_learned_combiner"]
 
         if "perplexity_output" in detailed_results and "sentence_heatmap" in detailed_results["perplexity_output"]:
             detailed_results["sentence_heatmap"] = detailed_results["perplexity_output"]["sentence_heatmap"]

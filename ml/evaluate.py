@@ -19,6 +19,7 @@ def evaluate_modality(modality: str, dataset_path: str, predict_fn):
     y_pred = []
     inconclusive_count = 0
     agreements = []
+    combiner_used_count = 0
     # signal_name -> {"probs": [...], "labels": [...]} across all samples,
     # so we can see which individual signal is actually earning its weight.
     per_signal = {}
@@ -40,9 +41,14 @@ def evaluate_modality(modality: str, dataset_path: str, predict_fn):
             verdict = result.get("verdict")
             
             # Record agreement distribution
+          # Record agreement distribution
             detailed = result.get("detailed_results", {})
             if "agreement" in detailed:
                 agreements.append(detailed["agreement"])
+            if detailed.get("used_learned_combiner"):
+                combiner_used_count += 1
+
+            # Record each individual signal's raw probability against the true
                 
             # Record each individual signal's raw probability against the true
             # label, regardless of whether the ensemble verdict was conclusive.
@@ -129,7 +135,9 @@ def evaluate_modality(modality: str, dataset_path: str, predict_fn):
 | **Actual Human** | {cm[1][0]} (FP) | {cm[1][1]} (TN) |
 
 ## 🧠 Ensemble Confidence
+## 🧠 Ensemble Confidence
 - **Average Signal Agreement:** {avg_agreement*100:.2f}%
+- **Learned Combiner Used:** {combiner_used_count}/{len(lines)} samples ({combiner_used_count/len(lines)*100:.1f}%)
 
 ## 🔍 Per-Signal Breakdown (each signal alone, thresholded at 0.5)
 | Signal | Accuracy | Precision (AI) | Recall (AI) | N |

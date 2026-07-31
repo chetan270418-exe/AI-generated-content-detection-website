@@ -1,10 +1,10 @@
 # 📊 Evaluation Report: Text Detector
 
-**Date:** 2026-07-31 23:11:04
+**Date:** 2026-07-28 15:44:17
 **Total Samples:** 300
 **Conclusive Predictions:** 300
 **Inconclusive Predictions:** 0 (0.0%)
-**Execution Time:** 823.82s
+**Execution Time:** 617.87s
 
 ## 🎯 Primary Metrics (Conclusive only)
 - **Accuracy:** 98.33%
@@ -19,9 +19,7 @@
 | **Actual Human** | 0 (FP) | 150 (TN) |
 
 ## 🧠 Ensemble Confidence
-## 🧠 Ensemble Confidence
 - **Average Signal Agreement:** 52.27%
-- **Learned Combiner Used:** 292/300 samples (97.3%)
 
 ## 🔍 Per-Signal Breakdown (each signal alone, thresholded at 0.5)
 | Signal | Accuracy | Precision (AI) | Recall (AI) | N |
